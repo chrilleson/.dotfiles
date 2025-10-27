@@ -1,0 +1,37 @@
+- defaults:
+    link:
+      relink: true
+      create: true
+    shell:
+      stdout: true
+      stderr: true
+
+- clean:
+    ~/:
+      force: true
+    ~/AppData/Roaming/nushell:
+      force: true
+
+- link:
+    # Nushell
+    ~/AppData/Roaming/nushell/config.nu: nushell/config.nu
+    ~/AppData/Roaming/nushell/env.nu: nushell/env.nu
+    ~/AppData/Roaming/nushell/scripts: nushell/scripts
+    
+- create:
+    - ~/AppData/Roaming/nushell
+    - ~/AppData/Roaming/nushell/scripts
+
+- shell:
+    - description: Installing Scoop packages
+      command: |
+        if (!(Get-Command scoop -ErrorAction SilentlyContinue)) {
+          Write-Host "Scoop not installed. Install from https://scoop.sh"
+        } else {
+          scoop bucket add extras
+          scoop bucket add nerd-fonts
+          scoop install nushell
+          # Optional: Install a nerd font for better terminal icons
+          # scoop install FiraCode-NF-Mono
+        }
+      
