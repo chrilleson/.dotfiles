@@ -2,6 +2,7 @@
     link:
       relink: true
       create: true
+      force: true
     shell:
       stdout: true
       stderr: true
@@ -20,8 +21,6 @@
     
     # WezTerm (from submodule)
     ~/.wezterm.lua: wezterm/wezterm.lua
-    # If your WezTerm repo has additional files/folders, add them like:
-    # ~/.config/wezterm: wezterm/
     
     # Git
     ~/.gitconfig: git/gitconfig
@@ -35,9 +34,6 @@
     # Starship prompt
     ~/.config/starship.toml: starship/starship.toml
     
-    # Carapace (completion engine for Nushell)
-    ~/.config/carapace: carapace
-
 - create:
     - ~/AppData/Roaming/nushell
     - ~/AppData/Roaming/nushell/scripts
@@ -46,15 +42,17 @@
 - shell:
     - description: Installing Scoop packages
       command: |
-        if (!(Get-Command scoop -ErrorAction SilentlyContinue)) {
-          Write-Host "Scoop not installed. Install from https://scoop.sh"
-        } else {
-          scoop bucket add extras
-          scoop bucket add nerd-fonts
-          scoop install git delta fzf zoxide bat ripgrep fd jq starship carapace wezterm nushell
-          # Optional: Install a nerd font for better terminal icons
-          # scoop install FiraCode-NF-Mono
-        }
-      
+        powershell
+          -NoProfile
+          -ExecutionPolicy Bypass
+          -Command "
+            if (!(Get-Command scoop -ErrorAction SilentlyContinue)) {
+              Write-Host 'Scoop not installed. Install from https://scoop.sh'
+            } else {
+              scoop bucket add extras
+              scoop bucket add nerd-fonts
+              scoop install git delta fzf zoxide bat ripgrep fd jq starship wezterm nushell JetBrainsMono-NF
+            }"
+
     - description: Setting up Git
       command: git config --global core.excludesfile ~/.gitignore_global
