@@ -1,0 +1,8 @@
+[core]
+        editor = \"C:\\Users\\chris\\AppData\\Local\\Programs\\Microsoft VS Code\\bin\\code\" --wait
+        longpaths = true
+[user]
+        email = Christoffer.Ljungqvist@hotmail.se
+        name = Christoffer Ljungqvist
+[init]
+        defaultBranch = main

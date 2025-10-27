@@ -18,6 +18,10 @@
     ~/AppData/Roaming/nushell/env.nu: nushell/env.nu
     ~/AppData/Roaming/nushell/scripts: nushell/scripts
     
+    # Git
+    ~/.gitconfig: git/gitconfig
+    ~/.gitignore_global: git/gitignore_global
+    
     # Starship prompt
     ~/.config/starship.toml: starship/starship.toml
     
@@ -33,8 +37,10 @@
         } else {
           scoop bucket add extras
           scoop bucket add nerd-fonts
-          scoop install starship nushell
+          scoop install git starship nushell
           # Optional: Install a nerd font for better terminal icons
           # scoop install FiraCode-NF-Mono
         }
       
+    - description: Setting up Git
+      command: git config --global core.excludesfile ~/.gitignore_global
