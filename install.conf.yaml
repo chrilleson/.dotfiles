@@ -18,6 +18,9 @@
     ~/AppData/Roaming/nushell/env.nu: nushell/env.nu
     ~/AppData/Roaming/nushell/scripts: nushell/scripts
     
+    # Starship prompt
+    ~/.config/starship.toml: starship/starship.toml
+    
 - create:
     - ~/AppData/Roaming/nushell
     - ~/AppData/Roaming/nushell/scripts
@@ -30,7 +33,7 @@
         } else {
           scoop bucket add extras
           scoop bucket add nerd-fonts
-          scoop install nushell
+          scoop install starship nushell
           # Optional: Install a nerd font for better terminal icons
           # scoop install FiraCode-NF-Mono
         }
