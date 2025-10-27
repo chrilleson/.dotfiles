@@ -18,6 +18,11 @@
     ~/AppData/Roaming/nushell/env.nu: nushell/env.nu
     ~/AppData/Roaming/nushell/scripts: nushell/scripts
     
+    # WezTerm (from submodule)
+    ~/.wezterm.lua: wezterm/wezterm.lua
+    # If your WezTerm repo has additional files/folders, add them like:
+    # ~/.config/wezterm: wezterm/
+    
     # Git
     ~/.gitconfig: git/gitconfig
     ~/.gitignore_global: git/gitignore_global
@@ -30,9 +35,13 @@
     # Starship prompt
     ~/.config/starship.toml: starship/starship.toml
     
+    # Carapace (completion engine for Nushell)
+    ~/.config/carapace: carapace
+
 - create:
     - ~/AppData/Roaming/nushell
     - ~/AppData/Roaming/nushell/scripts
+    - ~/.config
 
 - shell:
     - description: Installing Scoop packages
@@ -42,7 +51,7 @@
         } else {
           scoop bucket add extras
           scoop bucket add nerd-fonts
-          scoop install git starship nushell
+          scoop install git delta fzf zoxide bat ripgrep fd jq starship carapace wezterm nushell
           # Optional: Install a nerd font for better terminal icons
           # scoop install FiraCode-NF-Mono
         }
