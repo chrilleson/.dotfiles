@@ -25,11 +25,17 @@
     # Git
     ~/.gitconfig: git/gitconfig
     ~/.gitignore_global: git/gitignore_global
-    
+
     # VS Code
     ~/AppData/Roaming/Code/User/settings.json: vscode/settings.json
     ~/AppData/Roaming/Code/User/keybindings.json: vscode/keybindings.json
     ~/AppData/Roaming/Code/User/snippets: vscode/snippets
+
+    # Node/TypeScript
+    ~/.npmrc: node/.npmrc
+    .config/pnpm/rc: node/.pnpmrc
+    ~/.eslintrc.json: node/eslintrc.json
+    ~/.prettierrc: node/.prettierrc
     
     # Starship prompt
     ~/.config/starship.toml: starship/starship.toml
@@ -38,6 +44,7 @@
     - ~/AppData/Roaming/nushell
     - ~/AppData/Roaming/nushell/scripts
     - ~/.config
+    - ~/.config/pnpm
 
 - shell:
     - description: Installing Scoop packages
@@ -51,8 +58,28 @@
             } else {
               scoop bucket add extras
               scoop bucket add nerd-fonts
-              scoop install git delta fzf zoxide bat ripgrep fd jq starship wezterm nushell JetBrainsMono-NF
+              scoop install git delta fzf zoxide bat ripgrep fd jq starship wezterm nushell JetBrainsMono-NF fnm
             }"
+
+    - description: Installing Node.js LTS via fnm
+      command: |
+        powershell
+          -NoProfile
+          -ExecutionPolicy Bypass
+          -Command "
+            fnm install --lts
+            fnm use lts-latest
+            fnm default lts-latest
+          "
+
+    - description: Installing global Node packages
+      command: |
+        powershell
+          -NoProfile
+          -ExecutionPolicy Bypass
+          -Command "
+            npm install -g typescript ts-node pnpm yarn eslint prettier @fsouza/prettierd
+          "
 
     - description: Setting up Git
       command: git config --global core.excludesfile ~/.gitignore_global

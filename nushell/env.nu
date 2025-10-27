@@ -18,5 +18,6 @@
 # them for future reference.
 
 use std "path add"
+# fnm (Fast Node Manager)
 fnm env --json | from json | load-env
 path add $env.FNM_MULTISHELL_PATH
