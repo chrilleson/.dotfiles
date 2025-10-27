@@ -22,6 +22,11 @@
     ~/.gitconfig: git/gitconfig
     ~/.gitignore_global: git/gitignore_global
     
+    # VS Code
+    ~/AppData/Roaming/Code/User/settings.json: vscode/settings.json
+    ~/AppData/Roaming/Code/User/keybindings.json: vscode/keybindings.json
+    ~/AppData/Roaming/Code/User/snippets: vscode/snippets
+    
     # Starship prompt
     ~/.config/starship.toml: starship/starship.toml
     
