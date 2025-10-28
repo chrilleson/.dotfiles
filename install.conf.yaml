@@ -45,10 +45,10 @@
 
 - shell:
   - description: Installing Scoop packages
-    command: pwsh -NoProfile -ExecutionPolicy Bypass -File ".\scripts\install-scoop-packages.ps1"
+    command: nu .\scripts\install-scoop-packages.nu
 
   - description: Setting up fnm and Node.js
-    command: pwsh -NoProfile -ExecutionPolicy Bypass -File ".\scripts\setup-fnm.ps1"
+    command: nu .\scripts\setup-fnm.nu
 
   - description: Setting up Git
     command: git config --global core.excludesfile ~/.gitignore_global
