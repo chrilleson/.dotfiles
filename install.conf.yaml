@@ -12,6 +12,8 @@
       force: true
     ~/AppData/Roaming/nushell:
       force: true
+    ~/AppData/Local/nvim:
+      force: true
 
 - link:
     # Nushell
@@ -20,6 +22,9 @@
     
     # WezTerm (from submodule)
     ~/.wezterm.lua: wezterm/wezterm.lua
+    
+    # Neovim (from submodule)
+    ~/AppData/Local/nvim: nvim
     
     # Git
     ~/.gitconfig: git/gitconfig
