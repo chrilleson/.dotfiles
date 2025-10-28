@@ -21,7 +21,7 @@ try {
     
     # Install main bucket packages
     print $"\n(ansi cyan)Installing main bucket packages...(ansi reset)"
-    scoop install git delta fzf zoxide bat ripgrep fd jq starship fnm nu
+    scoop install git delta fzf zoxide bat ripgrep fd jq starship fnm
     
     # Install extras bucket packages
     print $"\n(ansi cyan)Installing extras bucket packages...(ansi reset)"
