@@ -33,7 +33,7 @@
 
     # Node/TypeScript
     ~/.npmrc: node/.npmrc
-    .config/pnpm/rc: node/.pnpmrc
+    ~/AppData/Local/pnpm/config: node/.pnpmrc
     ~/.eslintrc.json: node/eslintrc.json
     ~/.prettierrc: node/.prettierrc
     
@@ -44,7 +44,7 @@
     - ~/AppData/Roaming/nushell
     - ~/AppData/Roaming/nushell/scripts
     - ~/.config
-    - ~/.config/pnpm
+    - ~/AppData/Local/pnpm/config
 
 - shell:
     - description: Installing Scoop packages
