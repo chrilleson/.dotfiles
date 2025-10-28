@@ -17,7 +17,6 @@
     # Nushell
     ~/AppData/Roaming/nushell/config.nu: nushell/config.nu
     ~/AppData/Roaming/nushell/env.nu: nushell/env.nu
-    ~/AppData/Roaming/nushell/scripts: nushell/scripts
     
     # WezTerm (from submodule)
     ~/.wezterm.lua: wezterm/wezterm.lua
@@ -29,7 +28,6 @@
     # VS Code
     ~/AppData/Roaming/Code/User/settings.json: vscode/settings.json
     ~/AppData/Roaming/Code/User/keybindings.json: vscode/keybindings.json
-    ~/AppData/Roaming/Code/User/snippets: vscode/snippets
 
     # Node/TypeScript
     ~/.npmrc: node/.npmrc
@@ -42,44 +40,15 @@
     
 - create:
     - ~/AppData/Roaming/nushell
-    - ~/AppData/Roaming/nushell/scripts
     - ~/.config
     - ~/AppData/Local/pnpm/config
 
 - shell:
-    - description: Installing Scoop packages
-      command: |
-        powershell
-          -NoProfile
-          -ExecutionPolicy Bypass
-          -Command "
-            if (!(Get-Command scoop -ErrorAction SilentlyContinue)) {
-              Write-Host 'Scoop not installed. Install from https://scoop.sh'
-            } else {
-              scoop bucket add extras
-              scoop bucket add nerd-fonts
-              scoop install git delta fzf zoxide bat ripgrep fd jq starship wezterm nushell JetBrainsMono-NF fnm
-            }"
+  - description: Installing Scoop packages
+    command: nu .\scripts\install-scoop-packages.nu
 
-    - description: Installing Node.js LTS via fnm
-      command: |
-        powershell
-          -NoProfile
-          -ExecutionPolicy Bypass
-          -Command "
-            fnm install --lts
-            fnm use lts-latest
-            fnm default lts-latest
-          "
+  - description: Setting up fnm and Node.js
+    command: nu .\scripts\setup-fnm.nu
 
-    - description: Installing global Node packages
-      command: |
-        powershell
-          -NoProfile
-          -ExecutionPolicy Bypass
-          -Command "
-            npm install -g typescript ts-node pnpm yarn eslint prettier @fsouza/prettierd
-          "
-
-    - description: Setting up Git
-      command: git config --global core.excludesfile ~/.gitignore_global
+  - description: Setting up Git
+    command: git config --global core.excludesfile ~/.gitignore_global
