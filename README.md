@@ -24,6 +24,11 @@ Before running the installation, you need to install the following on your syste
 4. **Nushell** - Required to run the installation scripts
    - Install with: `scoop install nu`
 
+5. **Windows Developer Mode** (Recommended) - Allows creating symbolic links without administrator privileges
+   - Go to: Settings → Privacy & Security → For developers → Developer Mode
+   - Toggle "Developer Mode" to ON
+   - Alternative: Run the installation script as Administrator
+
 ## Installation
 
 1. Clone this repository:
