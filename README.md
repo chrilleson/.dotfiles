@@ -37,7 +37,20 @@ Before running the installation, you need to install the following on your syste
    cd .dotfiles
    ```
 
-2. Run the installation script:
+2. Set up your machine-specific Git configuration:
+   ```powershell
+   # Copy the template to your home directory
+   cp git/gitconfig-local.example ~/.gitconfig-local
+   
+   # Edit with your personal details
+   notepad ~/.gitconfig-local
+   ```
+   
+   Update the following values in `~/.gitconfig-local`:
+   - Your name and email address
+   - Your preferred editor
+
+3. Run the installation script:
    - **Using PowerShell:**
      ```powershell
      .\install.ps1

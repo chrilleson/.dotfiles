@@ -1,0 +1,19 @@
+# Machine-specific Git configuration
+# Copy this file to ~/.gitconfig-local and customize for your machine
+# This file should NOT be committed to version control
+
+[user]
+	name = Your Name
+	email = your.email@example.com
+
+[core]
+	# Windows example:
+	# editor = "C:\\Program Files\\Microsoft VS Code\\bin\\code" --wait
+	# 
+	# Linux/Mac example:
+	# editor = vim
+	editor = your-preferred-editor
+
+# Optional: Add machine-specific aliases or settings below
+# [alias]
+#	custom = !echo "Machine-specific alias"

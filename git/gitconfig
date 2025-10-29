@@ -1,9 +1,11 @@
 [core]
-        editor = "C:\\Users\\ChristofferLjungqvis\\AppData\\Local\\Programs\\Microsoft VS Code\\bin\\code" --wait
-        longpaths = true
+	longpaths = true
 	excludesfile = ~/.gitignore_global
-[user]
-        email = christoffer@kollarna.se
-        name = Christoffer Ljungqvist
+
 [init]
-        defaultBranch = main
+	defaultBranch = main
+
+# Include machine-specific configuration
+# Create ~/.gitconfig-local with user details and editor preferences
+[include]
+	path = ~/.gitconfig-local
