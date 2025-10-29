@@ -30,5 +30,5 @@ def main [...args: string] {
     # Run dotbot
     print $"Using ($python)..."
     let dotbot_path = ($BASEDIR | path join $DOTBOT_DIR | path join $DOTBOT_BIN)
-    ^$python $dotbot_path -d $BASEDIR -c $CONFIG ...$args
+    ^$python $dotbot_path -d $BASEDIR -p dotbot-scoop/scoop.py -c $CONFIG ...$args
 }

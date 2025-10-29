@@ -1,9 +1,9 @@
 [core]
-        editor = \"C:\\Users\\chris\\AppData\\Local\\Programs\\Microsoft VS Code\\bin\\code\" --wait
+        editor = "C:\\Users\\ChristofferLjungqvis\\AppData\\Local\\Programs\\Microsoft VS Code\\bin\\code" --wait
         longpaths = true
 	excludesfile = ~/.gitignore_global
 [user]
-        email = Christoffer.Ljungqvist@hotmail.se
+        email = christoffer@kollarna.se
         name = Christoffer Ljungqvist
 [init]
         defaultBranch = main

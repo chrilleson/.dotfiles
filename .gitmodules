@@ -8,3 +8,6 @@
 [submodule "nvim"]
 	path = nvim
 	url = https://github.com/chrilleson/lazyvim-setup.git
+[submodule "dotbot-scoop"]
+	path = dotbot-scoop
+	url = https://github.com/JamJar00/dotbot-scoop.git

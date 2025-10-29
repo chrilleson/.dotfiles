@@ -48,12 +48,33 @@
     - ~/.config
     - ~/AppData/Local/pnpm/config
 
-- shell:
-  - description: Installing Scoop packages
-    command: nu .\scripts\install-scoop-packages.nu
+- scoop:
+    buckets:
+      - extras
+      - nerd-fonts
+    apps:
+      - git
+      - delta
+      - fzf
+      - zoxide
+      - bat
+      - ripgrep
+      - fd
+      - jq
+      - starship
+      - fnm
+      - neovim
+      - 7zip
+      - wezterm
+      - lazygit
+      - JetBrainsMono-NF
 
+- shell:
   - description: Setting up fnm and Node.js
     command: nu .\scripts\setup-fnm.nu
+
+  - description: Installing Node.js global packages
+    command: nu .\scripts\install-node-packages.nu
 
   - description: Setting up Git
     command: git config --global core.excludesfile ~/.gitignore_global
