@@ -21,7 +21,7 @@ scoop bucket add nerd-fonts err> /dev/null
 
 # Install main bucket packages (skip already installed)
 print $"\n(ansi cyan)Installing main bucket packages...(ansi reset)"
-let main_packages = [git delta fzf zoxide bat ripgrep fd jq starship fnm neovim]
+let main_packages = [git delta fzf zoxide bat ripgrep fd jq starship fnm neovim 7zip]
 for package in $main_packages {
     try {
         scoop install $package err> /dev/null
@@ -32,10 +32,13 @@ for package in $main_packages {
 
 # Install extras bucket packages
 print $"\n(ansi cyan)Installing extras bucket packages...(ansi reset)"
-try {
-    scoop install wezterm err> /dev/null
-} catch {
-    # Silently continue - package is likely already installed
+let extras_packages = [wezterm lazygit]
+for package in $extras_packages {
+    try {
+        scoop install $package err> /dev/null
+    } catch {
+        # Silently continue - package is likely already installed
+    }
 }
 
 # Install nerd-fonts bucket packages
