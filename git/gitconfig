@@ -7,6 +7,3 @@
         name = Christoffer Ljungqvist
 [init]
         defaultBranch = main
-[credential "helperselector"]
-	selected = <no helper>
-
