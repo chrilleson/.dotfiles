@@ -1,10 +1,19 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "theme": "opencode",
-  "model": "anthropic/claude-sonnet-4-20250514",
-  "small_model": "anthropic/claude-3-5-haiku-20241022",
+  "theme": "catpuccin",
+  "model": "github/claude-sonnet-4.5",
+  "small_model": "github/gpt-4o",
   "autoupdate": true,
   "share": "manual",
+  "disabled_providers": [
+    "anthropic",
+    "openai",
+    "gemini",
+    "deepseek",
+    "openrouter",
+    "bedrock",
+    "vertex"
+  ],
   "tools": {},
   "formatter": {
     "prettier": {
