@@ -15,6 +15,7 @@ let packages = [
     "ts-node"
     "pnpm"
     "yarn"
+    "opencode-ai"
 ]
 
 print $"\n(ansi cyan)Installing global packages...(ansi reset)"

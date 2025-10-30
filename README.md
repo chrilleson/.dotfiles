@@ -76,3 +76,4 @@ The installation will:
 - **VS Code** - Settings and keybindings
 - **Starship** - Shell prompt configuration
 - **Node.js** - ESLint, Prettier, npm/pnpm configuration
+- **OpenCode** - AI coding assistant configuration

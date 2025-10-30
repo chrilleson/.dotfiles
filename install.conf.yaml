@@ -43,9 +43,13 @@
     # Starship prompt
     ~/.config/starship.toml: starship/starship.toml
     
+    # OpenCode
+    ~/.config/opencode/opencode.json: opencode/opencode.json
+    
 - create:
     - ~/AppData/Roaming/nushell
     - ~/.config
+    - ~/.config/opencode
     - ~/AppData/Local/pnpm/config
 
 - scoop:

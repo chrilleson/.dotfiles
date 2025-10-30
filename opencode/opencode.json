@@ -1,0 +1,31 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "theme": "catppuccin",
+  "model": "github/claude-sonnet-4.5",
+  "small_model": "github/gpt-4o",
+  "autoupdate": true,
+  "share": "manual",
+  "disabled_providers": [
+    "anthropic",
+    "openai",
+    "gemini",
+    "deepseek",
+    "openrouter",
+    "bedrock",
+    "vertex"
+  ],
+  "agent": {
+    "commit": {
+      "model": "github/claude-sonnet-4.5",
+      "prompt": "You are a git commit assistant. When the user provides changes, analyze the git diff and create a conventional commit following this format:\n\n- Use conventional commit prefixes: feat, fix, chore, refactor, docs, style, test, perf\n- Keep the subject line under 72 characters\n- Focus on the 'why' not the 'what'\n- Match the commit style from git log\n\nAfter analyzing, draft a commit message and ask the user for confirmation before committing."
+    }
+  },
+  "tools": {},
+  "formatter": {
+    "prettier": {
+      "disabled": false
+    }
+  },
+  "permission": {},
+  "keybinds": {}
+}
