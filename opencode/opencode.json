@@ -1,6 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "theme": "catpuccin",
+  "theme": "catppuccin",
   "model": "github/claude-sonnet-4.5",
   "small_model": "github/gpt-4o",
   "autoupdate": true,
