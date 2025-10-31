@@ -30,7 +30,7 @@ let installed_packages = if ($npm_list_result.exit_code == 0) {
 }
 
 for package in $packages {
-    let is_installed = ($installed_packages | get -o $package | is-not-empty)
+    let is_installed = ($installed_packages | get -o $package) != null
     
     if $is_installed {
         print $"  Skipping ($package) - already installed"
