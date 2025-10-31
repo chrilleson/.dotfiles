@@ -27,8 +27,4 @@ fnm use lts-latest
 # Reload environment
 fnm env --json | from json | load-env
 
-# Install global npm packages
-print $"\n(ansi cyan)Installing global Node packages...(ansi reset)"
-npm install -g typescript ts-node pnpm yarn eslint prettier @fsouza/prettierd
-
-print $"\n(ansi green_bold)✓ Setup complete!(ansi reset)"
+print $"\n(ansi green_bold)✓ Setup fnm complete!(ansi reset)"
