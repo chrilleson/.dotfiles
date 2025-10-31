@@ -19,12 +19,28 @@ let packages = [
 ]
 
 print $"\n(ansi cyan)Installing global packages...(ansi reset)"
+
+# Get the list of installed packages once
+let npm_list_result = (npm list -g --depth=0 --json | complete)
+let installed_packages = if ($npm_list_result.exit_code == 0) {
+    ($npm_list_result.stdout | from json | get dependencies? | default {})
+} else {
+    print $"(ansi yellow)Warning: Failed to get npm global package list. Assuming none are installed.(ansi reset)"
+    {}
+}
+
 for package in $packages {
-    try {
-        print $"  Installing ($package)..."
-        npm install -g $package --no-audit
-    } catch {
-        print $"(ansi yellow)Warning: Failed to install ($package)(ansi reset)"
+    let is_installed = ($installed_packages | get -o $package) != null
+    
+    if $is_installed {
+        print $"  Skipping ($package) - already installed"
+    } else {
+        try {
+            print $"  Installing ($package)..."
+            npm install -g $package --no-audit
+        } catch {
+            print $"(ansi yellow)Warning: Failed to install ($package)(ansi reset)"
+        }
     }
 }
 
