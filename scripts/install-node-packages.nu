@@ -24,7 +24,7 @@ print $"\n(ansi cyan)Installing global packages...(ansi reset)"
 let installed_packages = (npm list -g --depth=0 --json | complete | get stdout | from json | get dependencies? | default {})
 
 for package in $packages {
-    let is_installed = ($installed_packages | get -i $package | is-not-empty)
+    let is_installed = ($installed_packages | get -o $package | is-not-empty)
     
     if $is_installed {
         print $"  Skipping ($package) - already installed"
