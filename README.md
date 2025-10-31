@@ -61,12 +61,15 @@ Before running the installation, you need to install the following on your syste
      ```
 
 The installation will:
+- Validate all prerequisites are installed
+- Back up any existing configuration files (with `.old` extension)
 - Set up symbolic links for all configuration files
 - Install development tools via Scoop (git, delta, fzf, zoxide, bat, ripgrep, fd, jq, starship, fnm)
 - Install WezTerm terminal
 - Install JetBrainsMono Nerd Font
 - Set up fnm and install Node.js LTS
 - Install global npm packages (typescript, ts-node, pnpm, yarn, eslint, prettier, prettierd)
+- Verify Git configuration is set up correctly
 
 ## What's Included
 
@@ -77,3 +80,8 @@ The installation will:
 - **Starship** - Shell prompt configuration
 - **Node.js** - ESLint, Prettier, npm/pnpm configuration
 - **OpenCode** - AI coding assistant configuration
+
+## Important Notes
+
+### Backup Files
+The installation automatically backs up any existing configuration files before creating symlinks. Backup files are saved with a `.old` extension (e.g., `~/.gitconfig.old`). If you need to restore a previous configuration, simply rename the backup file.

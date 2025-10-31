@@ -10,6 +10,13 @@ def main [...args: string] {
 
     cd $BASEDIR
 
+    # Validate prerequisites
+    print "Checking prerequisites..."
+    nu ./scripts/validate-prerequisites.nu
+    if ($env.LAST_EXIT_CODE != 0) {
+        exit 1
+    }
+
     # Update dotbot submodule
     print "Updating dotbot submodule..."
     git -C $DOTBOT_DIR submodule sync --quiet --recursive
@@ -31,4 +38,18 @@ def main [...args: string] {
     print $"Using ($python)..."
     let dotbot_path = ($BASEDIR | path join $DOTBOT_DIR | path join $DOTBOT_BIN)
     ^$python $dotbot_path -d $BASEDIR -p dotbot-scoop/scoop.py -c $CONFIG ...$args
+    
+    # Post-install validation
+    print "\n"
+    let gitconfig_local = ($nu.home-path | path join ".gitconfig-local")
+    if ($gitconfig_local | path exists) {
+        print $"(ansi green)✓ Git configuration is set up correctly(ansi reset)"
+    } else {
+        print $"(ansi yellow_bold)⚠ WARNING: ~/.gitconfig-local not found!(ansi reset)"
+        print $"(ansi yellow)Please create this file with your personal Git settings:(ansi reset)"
+        print $"  1. Copy the template: (ansi cyan)cp git/gitconfig-local.example ~/.gitconfig-local(ansi reset)"
+        print $"  2. Edit with your details: (ansi cyan)notepad ~/.gitconfig-local(ansi reset)\n"
+    }
+    
+    print $"(ansi green_bold)✓ Installation complete!(ansi reset)\n"
 }
