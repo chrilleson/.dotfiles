@@ -21,3 +21,5 @@ mkdir ($nu.data-dir | path join "vendor/autoload")
 starship init nu | save -f ($nu.data-dir | path join "vendor/autoload/starship.nu")
 
 $env.config.shell_integration.osc133 = false
+
+use C:\Users\ChristofferLjungqvis\dev\tools\.dotfiles\nushell\scripts\rider.nu
