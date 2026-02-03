@@ -1,0 +1,59 @@
+# Linux Package Definitions
+# Organized by package source: official repos (pacman) and AUR (yay)
+
+# Official Arch Repository Packages (pacman)
+official:
+  # Core utilities
+  - git
+  - git-delta
+  - fzf
+  - bat
+  - ripgrep
+  - fd
+  - jq
+  - zoxide
+  - eza  # Modern ls replacement
+  
+  # Development tools
+  - neovim
+  - nodejs
+  - npm
+  - python
+  - python-pip
+  - base-devel  # Required for building AUR packages
+  
+  # Shell and prompt
+  - nushell
+  - starship
+  
+  # Terminal
+  - wezterm
+  
+  # Additional development tools
+  - lazygit
+  - github-cli
+  
+  # Compression
+  - p7zip
+  - unzip
+  - zip
+
+# AUR Packages (yay)
+aur:
+  # Fast Node Manager
+  - fnm-bin
+  
+# Optional packages (can be enabled by user)
+optional:
+  # Additional shells
+  - fish
+  - zsh
+  
+  # More development tools
+  - docker
+  - docker-compose
+  
+  # Additional utilities
+  - btop  # Modern system monitor
+  - dust  # Modern du
+  - procs  # Modern ps
