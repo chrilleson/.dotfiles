@@ -21,3 +21,30 @@ mkdir ($nu.data-dir | path join "vendor/autoload")
 starship init nu | save -f ($nu.data-dir | path join "vendor/autoload/starship.nu")
 
 $env.config.shell_integration.osc133 = false
+
+# nushell/env.nu additions
+
+# Detect OS
+let os_type = (sys).host.name
+
+# Set config paths based on OS
+$env.XDG_CONFIG_HOME = if $os_type == "Windows" {
+    $"($env.APPDATA)"
+} else {
+    $"($env.HOME)/.config"
+}
+
+$env.XDG_DATA_HOME = if $os_type == "Windows" {
+    $"($env.LOCALAPPDATA)"
+} else {
+    $"($env.HOME)/.local/share"
+}
+
+# Add to PATH
+$env.PATH = (
+    $env.PATH
+    | split row (char esep)
+    | append ($env.XDG_DATA_HOME + "/nvim/mason/bin")
+    | append ($env.HOME + "/.local/bin")
+    | uniq
+)
