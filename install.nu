@@ -34,16 +34,16 @@ def main [...args: string] {
     # Platform-specific package installation
     if $platform == "windows" {
         # Install Scoop packages
-        nu ./scripts/install-scoop-packages.nu
+        nu ./windows/install-packages.nu
     } else if $platform == "linux" {
         # Install Linux packages
-        nu ./scripts/install-linux-packages.nu
+        nu ./linux/install-packages.nu
         
         # Install fonts
-        nu ./scripts/install-fonts-linux.nu
+        nu ./linux/install-fonts.nu
         
         # Setup bash integration
-        nu ./scripts/setup-bash-integration.nu
+        nu ./linux/setup-bash.nu
     } else if $platform == "macos" {
         print $"(ansi yellow)Note: macOS package installation via Homebrew(ansi reset)"
         print $"Use install.sh for full macOS support or install packages manually\n"

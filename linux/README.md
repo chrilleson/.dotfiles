@@ -21,7 +21,7 @@ nu install.nu
 
 Or manually:
 ```bash
-nu scripts/install-linux-packages.nu
+nu linux/install-packages.nu
 ```
 
 ### Supported Distributions
@@ -197,10 +197,10 @@ These are automatically set up in `00-env.sh`.
 
 ### Core Scripts
 
-- **install-linux-packages.nu** - Main package installation script
+- **install-packages.nu** - Main package installation script
 - **setup-yay.nu** - AUR helper installation
-- **install-fonts-linux.nu** - Font installation script
-- **setup-bash-integration.nu** - Bash integration setup
+- **install-fonts.nu** - Font installation script
+- **setup-bash.nu** - Bash integration setup
 
 ### Usage
 
@@ -208,13 +208,13 @@ All scripts are automatically called by `install.nu`. To run individual scripts:
 
 ```bash
 # Install packages only
-nu scripts/install-linux-packages.nu
+nu linux/install-packages.nu
 
 # Install fonts only
-nu scripts/install-fonts-linux.nu
+nu linux/install-fonts.nu
 
 # Setup bash integration only
-nu scripts/setup-bash-integration.nu
+nu linux/setup-bash.nu
 ```
 
 ## Next Steps After Installation

@@ -1,7 +1,7 @@
 #!/usr/bin/env nu
 # Install packages on Linux using native package managers
 
-use detect-platform.nu
+use ../scripts/detect-platform.nu
 
 def main [] {
     print $"(ansi cyan_bold)=== Installing Linux packages ===(ansi reset)"
@@ -49,8 +49,11 @@ def install-arch-packages [] {
         exit 1
     }
     
+    # Get the dotfiles root directory (parent of linux/)
+    let dotfiles_root = ($env.PWD | path dirname)
+    
     # Load package list
-    let packages_file = ([$env.PWD "linux" "packages.yaml"] | path join)
+    let packages_file = ([$dotfiles_root "linux" "packages.yaml"] | path join)
     
     if not ($packages_file | path exists) {
         print $"(ansi red)ERROR: packages.yaml not found at ($packages_file)(ansi reset)"
@@ -90,7 +93,7 @@ def install-arch-packages [] {
     
     # Setup yay for AUR packages
     print $"\n(ansi cyan)Setting up AUR helper (yay)...(ansi reset)"
-    nu ([$env.PWD "scripts" "setup-yay.nu"] | path join)
+    nu ([$dotfiles_root "linux" "setup-yay.nu"] | path join)
     
     # Install AUR packages
     if (which yay | is-not-empty) {
