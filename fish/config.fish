@@ -1,0 +1,8 @@
+# CachyOS base config (Arch-specific; guard means this is safe on other systems)
+if test -f /usr/share/cachyos-fish-config/cachyos-config.fish
+    source /usr/share/cachyos-fish-config/cachyos-config.fish
+end
+
+# Local paths
+fish_add_path ~/.local/bin
+fish_add_path ~/.opencode/bin

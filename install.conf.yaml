@@ -65,6 +65,29 @@
       path: node/prettierrc.json
       if: '[ -f node/prettierrc.json ]'
 
+# Fish shell (Linux)
+- link:
+    ~/.config/fish/config.fish:
+      path: fish/config.fish
+      if: '[ "$(uname)" = "Linux" ]'
+      create: true
+    ~/.config/fish/conf.d/starship.fish:
+      path: fish/conf.d/starship.fish
+      if: '[ "$(uname)" = "Linux" ]'
+      create: true
+    ~/.config/fish/conf.d/fnm.fish:
+      path: fish/conf.d/fnm.fish
+      if: '[ "$(uname)" = "Linux" ]'
+      create: true
+    ~/.config/fish/conf.d/zoxide.fish:
+      path: fish/conf.d/zoxide.fish
+      if: '[ "$(uname)" = "Linux" ]'
+      create: true
+    ~/.config/fish/conf.d/fzf.fish:
+      path: fish/conf.d/fzf.fish
+      if: '[ "$(uname)" = "Linux" ]'
+      create: true
+
 # Platform-specific scripts
 - link:
     ~/.local/bin/opencode:
