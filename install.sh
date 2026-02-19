@@ -143,13 +143,9 @@ brew "starship"
 brew "node"
 brew "fnm"
 
-# Terminal
-cask "wezterm" if OS.mac?
-
 # Additional tools
 brew "lazygit"
 brew "gh"
-brew "nushell"
 EOF
     fi
     
@@ -218,65 +214,6 @@ install_packages() {
     else
         install_native_packages
     fi
-}
-
-# Install Nushell
-install_nushell() {
-    if command -v nu &> /dev/null; then
-        echo -e "${GREEN}✓${NC} Nushell already installed"
-        return
-    fi
-    
-    echo -e "${YELLOW}→${NC} Installing Nushell..."
-    
-    if command -v brew &> /dev/null; then
-        brew install nushell
-    elif command -v cargo &> /dev/null; then
-        cargo install nu
-    else
-        echo -e "${YELLOW}→${NC} Installing Rust to build Nushell..."
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-        source "$HOME/.cargo/env"
-        cargo install nu
-    fi
-    
-    echo -e "${GREEN}✓${NC} Nushell installed"
-}
-
-# Install WezTerm
-install_wezterm() {
-    if command -v wezterm &> /dev/null; then
-        echo -e "${GREEN}✓${NC} WezTerm already installed"
-        return
-    fi
-    
-    echo -e "${YELLOW}→${NC} Installing WezTerm..."
-    
-    if [ "$OS" = "macos" ]; then
-        if command -v brew &> /dev/null; then
-            brew install --cask wezterm
-        else
-            echo -e "${YELLOW}⚠${NC} Please install WezTerm manually from https://wezfurlong.org/wezterm/"
-        fi
-    elif [ "$OS" = "linux" ]; then
-        case "$DISTRO" in
-            ubuntu|debian)
-                curl -fsSL https://apt.fury.io/wez/gpg.key | sudo gpg --yes --dearmor -o /usr/share/keyrings/wezterm-fury.gpg
-                echo 'deb [signed-by=/usr/share/keyrings/wezterm-fury.gpg] https://apt.fury.io/wez/ * *' | sudo tee /etc/apt/sources.list.d/wezterm.list
-                sudo apt update
-                sudo apt install -y wezterm
-                ;;
-            fedora)
-                sudo dnf copr enable wezfurlong/wezterm-nightly -y
-                sudo dnf install -y wezterm
-                ;;
-            *)
-                echo -e "${YELLOW}⚠${NC} Please install WezTerm manually from https://wezfurlong.org/wezterm/"
-                ;;
-        esac
-    fi
-    
-    echo -e "${GREEN}✓${NC} WezTerm installed"
 }
 
 # Run dotbot
@@ -367,17 +304,16 @@ final_setup() {
     echo ""
     echo -e "${BLUE}Next steps:${NC}"
     echo "  1. Edit ~/.gitconfig-local with your name and email"
-    echo "  2. Restart your terminal or run: source ~/.bashrc"
-    echo "  3. Launch WezTerm"
-    echo "  4. Run 'nu' to start Nushell"
+    echo "  2. Launch Ghostty"
+    echo "  3. Start Fish: chsh -s $(which fish)"
     echo ""
     echo -e "${BLUE}Installed tools:${NC}"
     command -v git && echo "  ✓ git $(git --version | cut -d' ' -f3)"
     command -v nvim && echo "  ✓ neovim $(nvim --version | head -n1 | cut -d' ' -f2)"
-    command -v nu && echo "  ✓ nushell $(nu --version)"
+    command -v fish && echo "  ✓ fish $(fish --version)"
     command -v starship && echo "  ✓ starship $(starship --version | cut -d' ' -f2)"
     command -v node && echo "  ✓ node $(node --version)"
-    command -v wezterm && echo "  ✓ wezterm $(wezterm --version | cut -d' ' -f2)"
+    command -v tmux && echo "  ✓ tmux $(tmux -V | cut -d' ' -f2)"
     echo ""
 }
 
@@ -387,8 +323,6 @@ main() {
     init_submodules
     install_homebrew
     install_packages
-    install_nushell
-    install_wezterm
     run_dotbot
     setup_git
     install_node

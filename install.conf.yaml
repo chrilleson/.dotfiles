@@ -39,15 +39,11 @@
       path: nvim
       create: true
     
-    # WezTerm (platform-specific location)
+    # WezTerm (macOS/Windows only — Linux uses Ghostty)
     ~/.wezterm.lua:
       path: wezterm/wezterm.lua
       if: '[ "$(uname)" = "Darwin" ] || [ "$(uname)" = "Windows_NT" ]'
-    ~/.config/wezterm:
-      path: wezterm
-      if: '[ "$(uname)" = "Linux" ]'
-      create: true
-    
+
     # VS Code (platform-aware)
     ~/.config/Code/User/settings.json:
       path: vscode/settings.json
@@ -74,19 +70,6 @@
     ~/.local/bin/opencode:
       path: opencode/opencode
       if: '[ "$(uname)" = "Linux" ] || [ "$(uname)" = "Darwin" ]'
-    # Bash integration files (Linux)
-    ~/.bashrc.d/00-env.sh:
-      path: linux/.bashrc.d/00-env.sh
-      if: '[ "$(uname)" = "Linux" ]'
-      create: true
-    ~/.bashrc.d/01-fnm.sh:
-      path: linux/.bashrc.d/01-fnm.sh
-      if: '[ "$(uname)" = "Linux" ]'
-      create: true
-    ~/.bashrc.d/02-tools.sh:
-      path: linux/.bashrc.d/02-tools.sh
-      if: '[ "$(uname)" = "Linux" ]'
-      create: true
 
 # Create local git config if it doesn't exist
 - shell:
