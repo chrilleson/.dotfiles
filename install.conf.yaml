@@ -87,6 +87,24 @@
       path: fish/conf.d/fzf.fish
       if: '[ "$(uname)" = "Linux" ]'
       create: true
+    ~/.config/fish/functions/dev.fish:
+      path: fish/functions/dev.fish
+      if: '[ "$(uname)" = "Linux" ]'
+      create: true
+
+# Ghostty (Linux)
+- link:
+    ~/.config/ghostty/config:
+      path: ghostty/config
+      if: '[ "$(uname)" = "Linux" ]'
+      create: true
+
+# Tmux (Linux)
+- link:
+    ~/.config/tmux/tmux.conf:
+      path: tmux/tmux.conf
+      if: '[ "$(uname)" = "Linux" ]'
+      create: true
 
 # Platform-specific scripts
 - link:
