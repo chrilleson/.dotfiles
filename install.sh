@@ -16,11 +16,15 @@ NC='\033[0m' # No Color
 # Detect OS
 OS="unknown"
 DISTRO="unknown"
+IS_ARCH_BASED=false
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     OS="linux"
     if [ -f /etc/os-release ]; then
         . /etc/os-release
         DISTRO=$ID
+        if [[ "$ID" == "arch" ]] || [[ "$ID_LIKE" == *"arch"* ]]; then
+            IS_ARCH_BASED=true
+        fi
     fi
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     OS="macos"
@@ -154,6 +158,42 @@ EOF
     return 0
 }
 
+# Parse package names from a section of linux/packages.yaml
+# Usage: parse_packages official | parse_packages aur
+parse_packages() {
+    local section=$1
+    awk "/^${section}:/{found=1; next} /^[a-zA-Z]/{found=0} found && /^  - /{gsub(/^  - /, \"\"); gsub(/ #.*/, \"\"); print}" linux/packages.yaml
+}
+
+# Install packages for Arch-based distros using pacman + paru
+install_arch_packages() {
+    echo -e "${YELLOW}→${NC} Installing official packages via pacman..."
+    local official_pkgs
+    official_pkgs=$(parse_packages "official" | tr '\n' ' ')
+    # shellcheck disable=SC2086
+    sudo pacman -S --needed --noconfirm $official_pkgs
+    echo -e "${GREEN}✓${NC} Official packages installed"
+
+    if ! command -v paru &> /dev/null; then
+        echo -e "${YELLOW}→${NC} Installing paru (AUR helper)..."
+        local tmp_dir
+        tmp_dir=$(mktemp -d)
+        git clone https://aur.archlinux.org/paru-bin.git "$tmp_dir/paru-bin"
+        (cd "$tmp_dir/paru-bin" && makepkg -si --noconfirm)
+        rm -rf "$tmp_dir"
+        echo -e "${GREEN}✓${NC} paru installed"
+    else
+        echo -e "${GREEN}✓${NC} paru already installed"
+    fi
+
+    echo -e "${YELLOW}→${NC} Installing AUR packages via paru..."
+    local aur_pkgs
+    aur_pkgs=$(parse_packages "aur" | tr '\n' ' ')
+    # shellcheck disable=SC2086
+    paru -S --needed --noconfirm $aur_pkgs
+    echo -e "${GREEN}✓${NC} AUR packages installed"
+}
+
 # Install packages using native package managers
 install_native_packages() {
     echo -e "${YELLOW}→${NC} Installing packages via system package manager..."
@@ -209,7 +249,9 @@ install_native_packages() {
 
 # Install packages
 install_packages() {
-    if command -v brew &> /dev/null; then
+    if [ "$IS_ARCH_BASED" = true ]; then
+        install_arch_packages
+    elif command -v brew &> /dev/null; then
         install_with_homebrew
     else
         install_native_packages
@@ -244,18 +286,21 @@ setup_git() {
 # Install Node.js and global packages
 install_node() {
     echo -e "${YELLOW}→${NC} Setting up Node.js..."
-    
+
     # Install fnm if not present
+    # On Arch-based distros, fnm-bin is installed via paru above — skip curl install
     if ! command -v fnm &> /dev/null; then
         if command -v brew &> /dev/null; then
             brew install fnm
-        else
+        elif [ "$IS_ARCH_BASED" = false ]; then
             curl -fsSL https://fnm.vercel.app/install | bash
             export PATH="$HOME/.local/share/fnm:$PATH"
-            eval "$(fnm env)"
         fi
     fi
-    
+
+    # Set up fnm env for the current shell session
+    eval "$(fnm env)"
+
     # Install and use LTS Node
     fnm install --lts
     fnm use lts-latest
@@ -321,7 +366,9 @@ final_setup() {
 main() {
     check_prerequisites
     init_submodules
-    install_homebrew
+    if [ "$OS" = "macos" ]; then
+        install_homebrew
+    fi
     install_packages
     run_dotbot
     setup_git
