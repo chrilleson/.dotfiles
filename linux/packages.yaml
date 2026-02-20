@@ -33,6 +33,7 @@ official:
   # Additional development tools
   - lazygit
   - github-cli
+  - dotnet-sdk
 
   # Compression
   - p7zip
