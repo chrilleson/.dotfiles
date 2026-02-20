@@ -27,7 +27,7 @@
     ~/.gitconfig:
       path: git/gitconfig
     ~/.gitignore:
-      path: git/gitignore
+      path: git/gitignore_global
     
     # Starship (cross-platform prompt)
     ~/.config/starship.toml:
