@@ -2,86 +2,123 @@
     link:
       relink: true
       create: true
-      force: true
-      backup: true
-    shell:
-      stdout: true
-      stderr: true
 
-- clean:
-    ~/:
-      force: true
-    ~/AppData/Roaming/nushell:
-      force: true
-    ~/AppData/Local/nvim:
-      force: true
+- clean: ['~']
 
-- link:
-    # Nushell
-    ~/AppData/Roaming/nushell/config.nu: nushell/config.nu
-    ~/AppData/Roaming/nushell/env.nu: nushell/env.nu
-
-    # WezTerm (from submodule)
-    ~/.wezterm.lua: wezterm/wezterm.lua
-
-    # Neovim (from submodule)
-    ~/AppData/Local/nvim: nvim
-
-    # Git
-    ~/.gitconfig: git/gitconfig
-    ~/.gitignore_global: git/gitignore_global
-
-    # VS Code
-    ~/AppData/Roaming/Code/User/settings.json: vscode/settings.json
-    ~/AppData/Roaming/Code/User/keybindings.json: vscode/keybindings.json
-
-    # Node/TypeScript
-    ~/.npmrc: node/.npmrc
-    ~/AppData/Local/pnpm/config: node/.pnpmrc
-    ~/.eslintrc.json: node/eslintrc.json
-    ~/.prettierrc: node/.prettierrc
-
-    # Starship prompt
-    ~/.config/starship.toml: starship/starship.toml
-
-    # OpenCode
-    ~/.config/opencode/opencode.json: opencode/opencode.json
-
-- create:
-    - ~/AppData/Roaming/nushell
-    - ~/.config
-    - ~/.config/opencode
-    - ~/AppData/Local/pnpm/config
-
-- scoop:
-    buckets:
-      - extras
-      - nerd-fonts
-    apps:
-      - git
-      - delta
-      - fzf
-      - zoxide
-      - bat
-      - ripgrep
-      - fd
-      - jq
-      - starship
-      - fnm
-      - neovim
-      - 7zip
-      - wezterm
-      - lazygit
-      - JetBrainsMono-NF
-      - opencode
-
+# Create XDG directories on Linux/macOS
 - shell:
-    - description: Setting up fnm and Node.js
-      command: nu .\scripts\setup-fnm.nu
+  - description: Create XDG directories
+    command: |
+      if [ "$(uname)" != "Windows_NT" ]; then
+        mkdir -p ~/.config ~/.local/{bin,share,state} ~/.cache
+      fi
+    stdout: true
+    stderr: true
+    quiet: true
 
-    - description: Installing Node.js global packages
-      command: nu .\scripts\install-node-packages.nu
+# Symlink configurations
+- link:
+    # Nushell config (cross-platform)
+    ~/.config/nushell:
+      path: nushell
+      create: true
+    
+    # Git config (cross-platform)
+    ~/.gitconfig:
+      path: git/gitconfig
+    ~/.gitignore:
+      path: git/gitignore_global
+    
+    # Starship (cross-platform prompt)
+    ~/.config/starship.toml:
+      path: starship/starship.toml
+      if: '[ -d ~/.config ] || [ "$(uname)" = "Windows_NT" ]'
+    
+    # Neovim (cross-platform)
+    ~/.config/nvim:
+      path: nvim
+      create: true
+    
+    # WezTerm (macOS/Windows only — Linux uses Ghostty)
+    ~/.wezterm.lua:
+      path: wezterm/wezterm.lua
+      if: '[ "$(uname)" = "Darwin" ] || [ "$(uname)" = "Windows_NT" ]'
 
-    - description: Setting up Git
-      command: git config --global core.excludesfile ~/.gitignore_global
+    # VS Code (platform-aware)
+    ~/.config/Code/User/settings.json:
+      path: vscode/settings.json
+      if: '[ "$(uname)" = "Linux" ]'
+      create: true
+    ~/.config/Code/User/keybindings.json:
+      path: vscode/keybindings.json
+      if: '[ "$(uname)" = "Linux" ]'
+      create: true
+    
+    # Node configs (cross-platform)
+    ~/.npmrc:
+      path: node/npmrc
+      if: '[ -f node/npmrc ]'
+    ~/.eslintrc.json:
+      path: node/eslintrc.json
+      if: '[ -f node/eslintrc.json ]'
+    ~/.prettierrc.json:
+      path: node/prettierrc.json
+      if: '[ -f node/prettierrc.json ]'
 
+# Fish shell (Linux)
+- link:
+    ~/.config/fish/config.fish:
+      path: fish/config.fish
+      if: '[ "$(uname)" = "Linux" ]'
+      create: true
+    ~/.config/fish/conf.d/starship.fish:
+      path: fish/conf.d/starship.fish
+      if: '[ "$(uname)" = "Linux" ]'
+      create: true
+    ~/.config/fish/conf.d/fnm.fish:
+      path: fish/conf.d/fnm.fish
+      if: '[ "$(uname)" = "Linux" ]'
+      create: true
+    ~/.config/fish/conf.d/zoxide.fish:
+      path: fish/conf.d/zoxide.fish
+      if: '[ "$(uname)" = "Linux" ]'
+      create: true
+    ~/.config/fish/conf.d/fzf.fish:
+      path: fish/conf.d/fzf.fish
+      if: '[ "$(uname)" = "Linux" ]'
+      create: true
+    ~/.config/fish/functions/dev.fish:
+      path: fish/functions/dev.fish
+      if: '[ "$(uname)" = "Linux" ]'
+      create: true
+
+# Ghostty (Linux)
+- link:
+    ~/.config/ghostty/config:
+      path: ghostty/config
+      if: '[ "$(uname)" = "Linux" ]'
+      create: true
+
+# Tmux (Linux)
+- link:
+    ~/.config/tmux/tmux.conf:
+      path: tmux/tmux.conf
+      if: '[ "$(uname)" = "Linux" ]'
+      create: true
+
+# Platform-specific scripts
+- link:
+    ~/.local/bin/opencode:
+      path: opencode/opencode
+      if: '[ "$(uname)" = "Linux" ] || [ "$(uname)" = "Darwin" ]'
+
+# Create local git config if it doesn't exist
+- shell:
+  - description: Create local gitconfig
+    command: |
+      if [ ! -f ~/.gitconfig-local ]; then
+        cp git/gitconfig-local.example ~/.gitconfig-local
+        echo "Created ~/.gitconfig-local - please edit with your details"
+      fi
+    stdout: true
+    stderr: true

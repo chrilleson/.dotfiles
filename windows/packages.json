@@ -1,0 +1,30 @@
+{
+  "buckets": [
+    "extras",
+    "nerd-fonts"
+  ],
+  "main": [
+    "git",
+    "delta",
+    "fzf",
+    "zoxide",
+    "bat",
+    "ripgrep",
+    "fd",
+    "jq",
+    "starship",
+    "fnm",
+    "neovim",
+    "7zip"
+  ],
+  "extras": [
+    "wezterm",
+    "lazygit"
+  ],
+  "nerd-fonts": [
+    "JetBrainsMono-NF"
+  ],
+  "optional": [
+    "opencode"
+  ]
+}

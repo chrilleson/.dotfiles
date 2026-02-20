@@ -10,7 +10,7 @@ Set-Location $BASEDIR
 
 # Validate prerequisites
 Write-Host "Checking prerequisites..."
-& powershell -ExecutionPolicy Bypass -File .\scripts\validate-prerequisites.ps1
+& powershell -ExecutionPolicy Bypass -File .\windows\validate-prereqs.ps1
 if ($LASTEXITCODE -ne 0) {
     exit 1
 }
