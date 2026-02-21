@@ -14,7 +14,7 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 │   ├── starship/        # starship.toml
 │   ├── node/            # npmrc, prettierrc, eslintrc
 │   ├── opencode/        # opencode binary
-│   └── nvim/            # LazyVim config (inlined)
+│   └── nvim/            # LazyVim config
 ├── linux/               # Linux-specific configs
 │   ├── fish/            # Fish shell config and conf.d/
 │   ├── ghostty/         # Ghostty terminal config
@@ -27,13 +27,14 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 │   ├── wezterm/         # WezTerm config
 │   ├── packages.json    # Scoop package list
 │   ├── install-packages.nu
+│   ├── install-node-packages.nu
+│   ├── setup-fnm.nu
+│   ├── validate-prerequisites.nu
 │   └── validate-prereqs.ps1
 ├── macos/               # macOS placeholder
-├── scripts/             # Nushell installer scripts
 ├── install.conf.yaml    # Dotbot symlink config
 ├── install.sh           # Linux/macOS install script
-├── install.ps1          # Windows install script
-├── install.nu           # Cross-platform Nushell install script
+├── install.nu           # Windows install script (Nushell)
 └── Brewfile             # Homebrew package list
 ```
 
@@ -115,14 +116,9 @@ Before running the installation:
    - Your preferred editor
 
 3. Run the installation script:
-   - **Using PowerShell:**
-     ```powershell
-     .\install.ps1
-     ```
-   - **Using Nushell:**
-     ```nu
-     nu install.nu
-     ```
+   ```nu
+   nu install.nu
+   ```
 
 ### Linux (Arch-based)
 
@@ -203,7 +199,7 @@ This dotfiles repository supports:
 - **Linux** - Arch-based distributions (CachyOS, Manjaro, Arch Linux, etc.) via pacman/AUR
 - **macOS** - Via Homebrew
 
-Use `install.sh` (Linux/macOS) or `install.ps1` / `install.nu` (Windows) for installation.
+Use `install.nu` (Windows) or `install.sh` (Linux/macOS) for installation.
 
 ### Backup Files
 The installation automatically backs up any existing configuration files before creating symlinks. Backup files are saved with a `.old` extension (e.g., `~/.gitconfig.old`). If you need to restore a previous configuration, simply rename the backup file.
