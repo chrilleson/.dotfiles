@@ -8,10 +8,7 @@
 # Create XDG directories on Linux/macOS
 - shell:
   - description: Create XDG directories
-    command: |
-      if [ "$(uname)" != "Windows_NT" ]; then
-        mkdir -p ~/.config ~/.local/{bin,share,state} ~/.cache
-      fi
+    command: mkdir -p ~/.config ~/.local/bin ~/.local/share ~/.local/state ~/.cache
     stdout: true
     stderr: true
     quiet: true
@@ -106,19 +103,16 @@
       if: '[ "$(uname)" = "Linux" ]'
       create: true
 
-# Platform-specific scripts
+# Opencode config (Linux/macOS)
 - link:
-    ~/.local/bin/opencode:
-      path: shared/opencode/opencode
+    ~/.config/opencode/config.json:
+      path: shared/opencode/opencode.json
       if: '[ "$(uname)" = "Linux" ] || [ "$(uname)" = "Darwin" ]'
+      create: true
 
 # Create local git config if it doesn't exist
 - shell:
   - description: Create local gitconfig
-    command: |
-      if [ ! -f ~/.gitconfig-local ]; then
-        cp shared/git/gitconfig-local.example ~/.gitconfig-local
-        echo "Created ~/.gitconfig-local - please edit with your details"
-      fi
+    command: test -f ~/.gitconfig-local || cp shared/git/gitconfig-local.example ~/.gitconfig-local
     stdout: true
     stderr: true

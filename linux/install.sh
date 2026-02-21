@@ -47,14 +47,14 @@ install_packages() {
         fish starship ghostty tmux \
         git-delta fzf zoxide bat ripgrep fd jq eza \
         neovim lazygit github-cli \
-        fnm-bin dotnet-sdk
+        fnm-bin opencode-bin dotnet-sdk
     echo -e "${GREEN}✓${NC} Packages installed"
 }
 
 run_dotbot() {
     echo -e "${YELLOW}→${NC} Running dotbot..."
     chmod +x dotbot/bin/dotbot
-    ./dotbot/bin/dotbot -d . -c install.conf.yaml
+    SHELL=/bin/bash ./dotbot/bin/dotbot -d . -c install.conf.yaml
     echo -e "${GREEN}✓${NC} Dotbot complete"
 }
 

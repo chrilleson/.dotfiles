@@ -44,6 +44,8 @@ official:
 aur:
   # Fast Node Manager
   - fnm-bin
+  # AI coding agent
+  - opencode-bin
 
 # Optional packages (can be enabled by user)
 optional:
