@@ -1,5 +1,5 @@
 # Shell
-command = /usr/bin/fish
+command = /usr/bin/tmux new-session -A -s main
 shell-integration = detect
 
 # Font
