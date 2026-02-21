@@ -20,20 +20,20 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 │   ├── ghostty/         # Ghostty terminal config
 │   ├── tmux/            # Tmux config
 │   ├── packages.yaml    # paru package list
-│   └── .bashrc.d/       # bashrc fragments
+│   ├── .bashrc.d/       # bashrc fragments
+│   └── install.sh       # Linux install script
 ├── windows/             # Windows-specific configs
 │   ├── nushell/         # Nushell config
 │   ├── vscode/          # VS Code settings and keybindings
 │   ├── wezterm/         # WezTerm config
 │   ├── packages.json    # Scoop package list
+│   ├── install.nu       # Windows install script (Nushell)
 │   ├── install-packages.nu
 │   ├── install-node-packages.nu
 │   ├── setup-fnm.nu
 │   ├── validate-prerequisites.nu
 │   └── validate-prereqs.ps1
-├── install.conf.yaml    # Dotbot symlink config
-├── install.sh           # Linux install script
-└── install.nu           # Windows install script (Nushell)
+└── install.conf.yaml    # Dotbot symlink config
 ```
 
 ## Prerequisites
@@ -79,7 +79,7 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 
 3. Run the installer:
    ```nu
-   nu install.nu
+   nu windows/install.nu
    ```
 
 ### Linux (Arch-based)
@@ -98,7 +98,7 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 
 3. Run the installer:
    ```bash
-   ./install.sh
+   ./linux/install.sh
    ```
 
 4. Set Fish as your default shell:
