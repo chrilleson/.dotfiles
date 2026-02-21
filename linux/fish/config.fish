@@ -6,3 +6,8 @@ end
 # Local paths
 fish_add_path ~/.local/bin
 fish_add_path ~/.opencode/bin
+
+# XDG-compliant tool locations
+set -gx BUN_INSTALL ~/.local/share/bun
+fish_add_path ~/.local/share/bun/bin
+set -gx NUGET_PACKAGES ~/.cache/NuGet/packages
