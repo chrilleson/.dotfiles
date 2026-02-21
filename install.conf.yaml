@@ -39,10 +39,10 @@
       path: shared/nvim
       create: true
 
-    # WezTerm (macOS/Windows only — Linux uses Ghostty)
+    # WezTerm (Windows only — Linux uses Ghostty, macOS uses Ghostty or native)
     ~/.wezterm.lua:
-      path: shared/wezterm/wezterm.lua
-      if: '[ "$(uname)" = "Darwin" ] || [ "$(uname)" = "Windows_NT" ]'
+      path: windows/wezterm/wezterm.lua
+      if: '[ "$(uname)" = "Windows_NT" ]'
 
     # VS Code (platform-aware)
     ~/.config/Code/User/settings.json:

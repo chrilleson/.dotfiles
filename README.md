@@ -14,8 +14,7 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 │   ├── starship/        # starship.toml
 │   ├── node/            # npmrc, prettierrc, eslintrc
 │   ├── opencode/        # opencode binary
-│   ├── nvim/            # LazyVim config (inlined)
-│   └── wezterm/         # WezTerm config (inlined, macOS/Windows)
+│   └── nvim/            # LazyVim config (inlined)
 ├── linux/               # Linux-specific configs
 │   ├── fish/            # Fish shell config and conf.d/
 │   ├── ghostty/         # Ghostty terminal config
@@ -25,6 +24,7 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 ├── windows/             # Windows-specific configs
 │   ├── nushell/         # Nushell config
 │   ├── vscode/          # VS Code settings and keybindings
+│   ├── wezterm/         # WezTerm config
 │   ├── packages.json    # Scoop package list
 │   ├── install-packages.nu
 │   └── validate-prereqs.ps1
@@ -189,7 +189,7 @@ Before running the installation:
 | **OpenCode** | | ✓ | ✓ |
 | **VS Code** | ✓ | ✓ | |
 | **Nushell** | ✓ | | |
-| **WezTerm** | ✓ | | ✓ |
+| **WezTerm** | ✓ | | |
 | **Fish** | | ✓ | |
 | **Ghostty** | | ✓ | |
 | **Tmux** | | ✓ | |
