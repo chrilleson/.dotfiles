@@ -5,6 +5,9 @@
 
 set -e
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -91,11 +94,11 @@ final_setup() {
     echo "  3. Launch Ghostty"
     echo ""
     echo -e "${BLUE}Installed tools:${NC}"
-    command -v git     &> /dev/null && echo "  ✓ git $(git --version | cut -d' ' -f3)"
-    command -v nvim    &> /dev/null && echo "  ✓ neovim $(nvim --version | head -n1 | cut -d' ' -f2)"
-    command -v fish    &> /dev/null && echo "  ✓ fish $(fish --version)"
+    command -v git      &> /dev/null && echo "  ✓ git $(git --version | cut -d' ' -f3)"
+    command -v nvim     &> /dev/null && echo "  ✓ neovim $(nvim --version | head -n1 | cut -d' ' -f2)"
+    command -v fish     &> /dev/null && echo "  ✓ fish $(fish --version)"
     command -v starship &> /dev/null && echo "  ✓ starship $(starship --version | cut -d' ' -f2)"
-    command -v tmux    &> /dev/null && echo "  ✓ tmux $(tmux -V | cut -d' ' -f2)"
+    command -v tmux     &> /dev/null && echo "  ✓ tmux $(tmux -V | cut -d' ' -f2)"
     echo ""
 }
 

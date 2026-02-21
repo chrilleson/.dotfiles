@@ -6,7 +6,8 @@ def main [...args: string] {
     const DOTBOT_DIR = "dotbot"
     const DOTBOT_BIN = "bin/dotbot"
 
-    let BASEDIR = $env.PWD
+    # Derive repo root from this script's location (windows/install.nu → parent dir)
+    let BASEDIR = ($env.CURRENT_FILE | path dirname | path dirname)
 
     cd $BASEDIR
 
@@ -17,10 +18,10 @@ def main [...args: string] {
     print $"(ansi cyan_bold)╚════════════════════════════════════════╝(ansi reset)\n"
 
     # Validate prerequisites
-    nu ./windows/validate-prerequisites.nu
+    nu ($env.CURRENT_FILE | path dirname | path join "validate-prerequisites.nu")
 
     # Install Scoop packages
-    nu ./windows/install-packages.nu
+    nu ($env.CURRENT_FILE | path dirname | path join "install-packages.nu")
 
     # Find Python executable
     let python = (
@@ -41,8 +42,8 @@ def main [...args: string] {
 
     # Setup Node.js
     print $"\n(ansi cyan_bold)=== Setting up Node.js ===(ansi reset)"
-    nu ./windows/setup-fnm.nu
-    nu ./windows/install-node-packages.nu
+    nu ($env.CURRENT_FILE | path dirname | path join "setup-fnm.nu")
+    nu ($env.CURRENT_FILE | path dirname | path join "install-node-packages.nu")
 
     # Post-install check
     let gitconfig_local = ($nu.home-path | path join ".gitconfig-local")
