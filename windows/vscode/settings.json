@@ -1,0 +1,98 @@
+{
+  "explorer.confirmDelete": false,
+  "git.confirmSync": false,
+  "git.autofetch": true,
+  "explorer.confirmDragAndDrop": false,
+  "security.workspace.trust.untrustedFiles": "open",
+  "editor.fontFamily": "CaskaydiaCove NF",
+  "redhat.telemetry.enabled": true,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "python.defaultInterpreterPath": "C:\\Users\\chris\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+  "workbench.startupEditor": "none",
+  "git.ignoreMissingGitWarning": true,
+  "settingsSync.ignoredSettings": [],
+  "editor.tabSize": 2,
+  "bicep.enableSurveys": false,
+  "editor.fontSize": 11,
+  "javascript.updateImportsOnFileMove.enabled": "never",
+  "powershell.promptToUpdatePowerShell": false,
+  "editor.minimap.enabled": false,
+  "github.copilot.editor.enableAutoCompletions": true,
+  "dotnet.testWindow.useTestingPlatformProtocol": true,
+  "@azure.argTenant": "",
+  "mssql.enableRichExperiences": true,
+  "pgsql.connections": [
+    {
+      "host": "localhost",
+      "dbname": "cookbook",
+      "user": "postgres",
+      "password": "",
+      "emptyPasswordInput": false,
+      "port": "54320",
+      "profileName": "localhost",
+      "connectTimeout": 15,
+      "encrypt": false,
+      "applicationName": "vscode-pgsql",
+      "hostaddr": "",
+      "options": "",
+      "sslmode": "prefer",
+      "clientEncoding": "",
+      "sslcompression": true,
+      "sslcert": "",
+      "sslkey": "",
+      "sslrootcert": "",
+      "sslcrl": "",
+      "requirepeer": ""
+    }
+  ],
+  "github.copilot.nextEditSuggestions.enabled": true,
+  "github.copilot.chat.codeGeneration.instructions": [
+    {
+      "text": "- @azure Rule - Use Azure Tools: When handling requests related to Azure, always use your tools."
+    },
+    {
+      "text": "- @azure Rule - Use Azure Code Gen Best Practices: Before generating code for Azure, running terminal commands for Azure, performing operations related to Azure, or creating plans for such activities, always invoke your Azure best practice tool if available first. Invoke the `get_bestpractices` tool to collect recommendations. Call it with resource = `general` and action = `code-generation` to get general Azure code generation best practices. Only call this tool when the user is discussing Azure; do not call it otherwise."
+    },
+    {
+      "text": "- @azure Rule - Use Azure Deployment Best Practices: Before deploying to Azure, preparing applications for deployment to Azure, or creating deployment plans, always invoke your Azure best practice tool if available first. Invoke the `get_bestpractices` tool to collect recommendations. Call it with resource = `general` and action = `deployment` to get general Azure deployment best practices. Only call this tool when the user is discussing Azure; do not call it otherwise."
+    },
+    {
+      "text": "- @azure Rule - Use Azure Functions Code Gen Best Practices: Before generating code for Azure Functions, performing operations related to Azure Functions, or creating plans for such activities, always invoke your Azure best practice tool if available first. Invoke the `get_bestpractices` tool to collect recommendations. Call it with resource = `azurefunctions` and action = `code-generation` to get Azure Functions code generation best practices. Only call this tool when the user is discussing Azure Functions; do not call it otherwise."
+    },
+    {
+      "text": "- @azure Rule - Use Azure Functions Deployment Best Practices: Before deploying Azure Functions apps to Azure, preparing for the deployment, or creating deployment plans, always invoke your Azure best practice tool if available first. Invoke the `get_bestpractices` tool to collect recommendations. Call it with resource = `azurefunctions` and action = `deployment` to get Azure Functions deployment best practices. Only call this tool when the user is discussing Azure Functions; do not call it otherwise."
+    },
+    {
+      "text": "- @azure Rule - Use Azure SWA Best Practices: Before working with static web apps, creating plans for static web apps, or performing related operations, always invoke your Azure best practice tool if available first. Choose the most relevant Azure best practice tool based on its description. Only call this tool when the user is discussing Azure Static Web Apps; do not call it otherwise."
+    },
+    {
+      "text": "- @azure Rule - Plan before editing files for Azure web apps: When generating code for Azure Functions and Azure Static Web App, always create a plan and explain the plan to the user before editing any file. Proceed with editing the files after getting consent from the user."
+    },
+    {
+      "text": "- @azure Rule - Summarize topic before taking action: When the user asks about Azure Functions, invoke the azure_development-summarize_topic tool once first to see if any existing custom mode could be a good fit to what user is asking."
+    }
+  ],
+  "go.toolsManagement.autoUpdate": true,
+  "svelte.enable-ts-plugin": true,
+  "[dockercompose]": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.autoIndent": "advanced",
+    "editor.quickSuggestions": {
+      "other": true,
+      "comments": false,
+      "strings": true
+    },
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+  "[github-actions-workflow]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+  "github.copilot.enable": {
+    "*": true,
+    "plaintext": false,
+    "markdown": true,
+    "scminput": false
+  },
+  "explorer.confirmPasteNative": false
+}

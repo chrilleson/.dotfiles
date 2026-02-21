@@ -20,96 +20,96 @@
 - link:
     # Nushell config (cross-platform)
     ~/.config/nushell:
-      path: nushell
+      path: windows/nushell
       create: true
-    
+
     # Git config (cross-platform)
     ~/.gitconfig:
-      path: git/gitconfig
+      path: shared/git/gitconfig
     ~/.gitignore:
-      path: git/gitignore_global
-    
+      path: shared/git/gitignore_global
+
     # Starship (cross-platform prompt)
     ~/.config/starship.toml:
-      path: starship/starship.toml
+      path: shared/starship/starship.toml
       if: '[ -d ~/.config ] || [ "$(uname)" = "Windows_NT" ]'
-    
+
     # Neovim (cross-platform)
     ~/.config/nvim:
-      path: nvim
+      path: shared/nvim
       create: true
-    
+
     # WezTerm (macOS/Windows only — Linux uses Ghostty)
     ~/.wezterm.lua:
-      path: wezterm/wezterm.lua
+      path: shared/wezterm/wezterm.lua
       if: '[ "$(uname)" = "Darwin" ] || [ "$(uname)" = "Windows_NT" ]'
 
     # VS Code (platform-aware)
     ~/.config/Code/User/settings.json:
-      path: vscode/settings.json
+      path: windows/vscode/settings.json
       if: '[ "$(uname)" = "Linux" ]'
       create: true
     ~/.config/Code/User/keybindings.json:
-      path: vscode/keybindings.json
+      path: windows/vscode/keybindings.json
       if: '[ "$(uname)" = "Linux" ]'
       create: true
-    
+
     # Node configs (cross-platform)
     ~/.npmrc:
-      path: node/npmrc
-      if: '[ -f node/npmrc ]'
+      path: shared/node/.npmrc
+      if: '[ -f shared/node/.npmrc ]'
     ~/.eslintrc.json:
-      path: node/eslintrc.json
-      if: '[ -f node/eslintrc.json ]'
+      path: shared/node/eslintrc.json
+      if: '[ -f shared/node/eslintrc.json ]'
     ~/.prettierrc.json:
-      path: node/prettierrc.json
-      if: '[ -f node/prettierrc.json ]'
+      path: shared/node/.prettierrc
+      if: '[ -f shared/node/.prettierrc ]'
 
 # Fish shell (Linux)
 - link:
     ~/.config/fish/config.fish:
-      path: fish/config.fish
+      path: linux/fish/config.fish
       if: '[ "$(uname)" = "Linux" ]'
       create: true
     ~/.config/fish/conf.d/starship.fish:
-      path: fish/conf.d/starship.fish
+      path: linux/fish/conf.d/starship.fish
       if: '[ "$(uname)" = "Linux" ]'
       create: true
     ~/.config/fish/conf.d/fnm.fish:
-      path: fish/conf.d/fnm.fish
+      path: linux/fish/conf.d/fnm.fish
       if: '[ "$(uname)" = "Linux" ]'
       create: true
     ~/.config/fish/conf.d/zoxide.fish:
-      path: fish/conf.d/zoxide.fish
+      path: linux/fish/conf.d/zoxide.fish
       if: '[ "$(uname)" = "Linux" ]'
       create: true
     ~/.config/fish/conf.d/fzf.fish:
-      path: fish/conf.d/fzf.fish
+      path: linux/fish/conf.d/fzf.fish
       if: '[ "$(uname)" = "Linux" ]'
       create: true
     ~/.config/fish/functions/dev.fish:
-      path: fish/functions/dev.fish
+      path: linux/fish/functions/dev.fish
       if: '[ "$(uname)" = "Linux" ]'
       create: true
 
 # Ghostty (Linux)
 - link:
     ~/.config/ghostty/config:
-      path: ghostty/config
+      path: linux/ghostty/config
       if: '[ "$(uname)" = "Linux" ]'
       create: true
 
 # Tmux (Linux)
 - link:
     ~/.config/tmux/tmux.conf:
-      path: tmux/tmux.conf
+      path: linux/tmux/tmux.conf
       if: '[ "$(uname)" = "Linux" ]'
       create: true
 
 # Platform-specific scripts
 - link:
     ~/.local/bin/opencode:
-      path: opencode/opencode
+      path: shared/opencode/opencode
       if: '[ "$(uname)" = "Linux" ] || [ "$(uname)" = "Darwin" ]'
 
 # Create local git config if it doesn't exist
@@ -117,7 +117,7 @@
   - description: Create local gitconfig
     command: |
       if [ ! -f ~/.gitconfig-local ]; then
-        cp git/gitconfig-local.example ~/.gitconfig-local
+        cp shared/git/gitconfig-local.example ~/.gitconfig-local
         echo "Created ~/.gitconfig-local - please edit with your details"
       fi
     stdout: true

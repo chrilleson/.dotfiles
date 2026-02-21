@@ -2,7 +2,40 @@
 
 This is a repository containing installation for all of my dotfiles.
 
-It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for managing dotfile installation.
+It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for managing dotfile installation (vendored directly, no submodules).
+
+## Repository Structure
+
+```
+.dotfiles/
+├── dotbot/              # vendored dotbot (no submodule)
+├── shared/              # cross-platform configs
+│   ├── git/             # gitconfig, gitignore, gitconfig-local.example
+│   ├── starship/        # starship.toml
+│   ├── node/            # npmrc, prettierrc, eslintrc
+│   ├── opencode/        # opencode binary
+│   ├── nvim/            # LazyVim config (inlined)
+│   └── wezterm/         # WezTerm config (inlined, macOS/Windows)
+├── linux/               # Linux-specific configs
+│   ├── fish/            # Fish shell config and conf.d/
+│   ├── ghostty/         # Ghostty terminal config
+│   ├── tmux/            # Tmux config
+│   ├── packages.yaml    # paru package list
+│   └── .bashrc.d/       # bashrc fragments
+├── windows/             # Windows-specific configs
+│   ├── nushell/         # Nushell config
+│   ├── vscode/          # VS Code settings and keybindings
+│   ├── packages.json    # Scoop package list
+│   ├── install-packages.nu
+│   └── validate-prereqs.ps1
+├── macos/               # macOS placeholder
+├── scripts/             # Nushell installer scripts
+├── install.conf.yaml    # Dotbot symlink config
+├── install.sh           # Linux/macOS install script
+├── install.ps1          # Windows install script
+├── install.nu           # Cross-platform Nushell install script
+└── Brewfile             # Homebrew package list
+```
 
 ## Prerequisites
 
@@ -10,7 +43,7 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 
 Before running the installation, you need to install the following on your system:
 
-1. **Git** - Required for cloning the repository and managing submodules
+1. **Git** - Required for cloning the repository
    - Download from: https://git-scm.com/
 
 2. **Python 3** - Required by Dotbot
@@ -61,10 +94,6 @@ Before running the installation:
 2. **Homebrew** (Recommended) - Package manager for macOS
    - Install from: https://brew.sh/
 
-3. **Nushell** (Optional) - For using the unified install.nu script
-   - Install with: `brew install nushell`
-   - Alternative: Use the `install.sh` bash script instead
-
 ## Installation
 
 ### Windows
@@ -77,13 +106,10 @@ Before running the installation:
 
 2. Set up your machine-specific Git configuration:
    ```powershell
-   # Copy the template to your home directory
-   cp git/gitconfig-local.example ~/.gitconfig-local
-   
-   # Edit with your personal details
+   cp shared/git/gitconfig-local.example ~/.gitconfig-local
    notepad ~/.gitconfig-local
    ```
-   
+
    Update the following values in `~/.gitconfig-local`:
    - Your name and email address
    - Your preferred editor
@@ -98,29 +124,17 @@ Before running the installation:
      nu install.nu
      ```
 
-The installation will:
-- Validate all prerequisites are installed
-- Back up any existing configuration files (with `.old` extension)
-- Set up symbolic links for all configuration files
-- Install development tools via Scoop (git, delta, fzf, zoxide, bat, ripgrep, fd, jq, starship, fnm)
-- Install WezTerm terminal
-- Install JetBrainsMono Nerd Font
-- Set up fnm and install Node.js LTS
-- Install global npm packages (typescript, ts-node, pnpm, yarn, eslint, prettier, prettierd)
-- Verify Git configuration is set up correctly
-
 ### Linux (Arch-based)
 
 1. Clone this repository:
    ```bash
    git clone https://github.com/chrilleson/.dotfiles.git
    cd .dotfiles
-   git submodule update --init
    ```
 
 2. Set up your machine-specific Git configuration:
    ```bash
-   cp git/gitconfig-local.example ~/.gitconfig-local
+   cp shared/git/gitconfig-local.example ~/.gitconfig-local
    $EDITOR ~/.gitconfig-local
    ```
 
@@ -145,13 +159,6 @@ The installation will:
    npm install -g typescript ts-node pnpm eslint prettier @fsouza/prettierd neovim
    ```
 
-The installation will:
-- Set up symbolic links for all configuration files via Dotbot
-- Configure Fish with starship prompt, fnm, zoxide, and fzf integrations
-- Set up Ghostty terminal with Catppuccin Mocha theme and JetBrainsMono Nerd Font
-- Set up Tmux with sensible defaults and a `dev` session launcher
-- Symlink the LazyVim Neovim config
-
 ### macOS
 
 1. Clone this repository:
@@ -162,10 +169,7 @@ The installation will:
 
 2. Set up your machine-specific Git configuration:
    ```bash
-   # Copy the template to your home directory
-   cp git/gitconfig-local.example ~/.gitconfig-local
-   
-   # Edit with your personal details
+   cp shared/git/gitconfig-local.example ~/.gitconfig-local
    $EDITOR ~/.gitconfig-local
    ```
 
@@ -174,33 +178,21 @@ The installation will:
    ./install.sh
    ```
 
-The installation will:
-- Validate all prerequisites are installed
-- Optionally install Homebrew if not present
-- Install packages via Homebrew using Brewfile
-- Back up any existing configuration files (with `.old` extension)
-- Set up symbolic links for all configuration files
-- Install WezTerm terminal
-- Install JetBrainsMono Nerd Font
-- Set up fnm and install Node.js LTS
-- Install global npm packages
-- Verify Git configuration is set up correctly
-
 ## What's Included
 
-| Config | Windows | Linux |
-|--------|---------|-------|
-| **Git** | ✓ | ✓ |
-| **Starship** | ✓ | ✓ |
-| **Neovim** (LazyVim) | ✓ | ✓ |
-| **Node.js** (fnm, eslint, prettier) | ✓ | ✓ |
-| **OpenCode** | ✓ | ✓ |
-| **VS Code** | ✓ | ✓ |
-| **Nushell** | ✓ | |
-| **WezTerm** | ✓ | |
-| **Fish** | | ✓ |
-| **Ghostty** | | ✓ |
-| **Tmux** | | ✓ |
+| Config | Windows | Linux | macOS |
+|--------|---------|-------|-------|
+| **Git** | ✓ | ✓ | ✓ |
+| **Starship** | ✓ | ✓ | ✓ |
+| **Neovim** (LazyVim) | ✓ | ✓ | ✓ |
+| **Node.js** (fnm, eslint, prettier) | ✓ | ✓ | ✓ |
+| **OpenCode** | | ✓ | ✓ |
+| **VS Code** | ✓ | ✓ | |
+| **Nushell** | ✓ | | |
+| **WezTerm** | ✓ | | ✓ |
+| **Fish** | | ✓ | |
+| **Ghostty** | | ✓ | |
+| **Tmux** | | ✓ | |
 
 ## Important Notes
 
@@ -215,3 +207,6 @@ Use `install.sh` (Linux/macOS) or `install.ps1` / `install.nu` (Windows) for ins
 
 ### Backup Files
 The installation automatically backs up any existing configuration files before creating symlinks. Backup files are saved with a `.old` extension (e.g., `~/.gitconfig.old`). If you need to restore a previous configuration, simply rename the backup file.
+
+### Machine-specific Git Config
+The file `~/.gitconfig-local` holds your personal name, email, and editor. It is sourced by `shared/git/gitconfig` and is never committed to this repository. Copy `shared/git/gitconfig-local.example` as a starting point.

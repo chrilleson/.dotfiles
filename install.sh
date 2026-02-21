@@ -72,13 +72,6 @@ check_prerequisites() {
     echo -e "${GREEN}✓${NC} All prerequisites met"
 }
 
-# Initialize submodules
-init_submodules() {
-    echo -e "${YELLOW}→${NC} Initializing git submodules..."
-    git submodule update --init --recursive
-    echo -e "${GREEN}✓${NC} Submodules initialized"
-}
-
 # Install Homebrew (optional but recommended)
 install_homebrew() {
     if ! command -v brew &> /dev/null; then
@@ -233,7 +226,7 @@ run_dotbot() {
 setup_git() {
     if [ ! -f ~/.gitconfig-local ]; then
         echo -e "${YELLOW}→${NC} Creating Git local configuration..."
-        cp git/gitconfig-local.example ~/.gitconfig-local
+        cp shared/git/gitconfig-local.example ~/.gitconfig-local
         echo -e "${GREEN}✓${NC} Created ~/.gitconfig-local"
         echo -e "${BLUE}ℹ${NC} Please edit ~/.gitconfig-local with your name and email"
     else
@@ -320,7 +313,6 @@ final_setup() {
 # Main installation flow
 main() {
     check_prerequisites
-    init_submodules
     install_homebrew
     install_packages
     run_dotbot

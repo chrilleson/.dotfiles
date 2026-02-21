@@ -1,0 +1,11 @@
+[core]
+	longpaths = true
+	excludesfile = ~/.gitignore_global
+
+[init]
+	defaultBranch = main
+
+# Include machine-specific configuration
+# Create ~/.gitconfig-local with user details and editor preferences
+[include]
+	path = ~/.gitconfig-local
