@@ -17,7 +17,7 @@ def main [...args: string] {
     print $"(ansi cyan_bold)╚════════════════════════════════════════╝(ansi reset)\n"
 
     # Validate prerequisites
-    nu ./scripts/validate-prerequisites.nu
+    nu ./windows/validate-prerequisites.nu
 
     # Install Scoop packages
     nu ./windows/install-packages.nu
@@ -41,8 +41,8 @@ def main [...args: string] {
 
     # Setup Node.js
     print $"\n(ansi cyan_bold)=== Setting up Node.js ===(ansi reset)"
-    nu ./scripts/setup-fnm.nu
-    nu ./scripts/install-node-packages.nu
+    nu ./windows/setup-fnm.nu
+    nu ./windows/install-node-packages.nu
 
     # Post-install check
     let gitconfig_local = ($nu.home-path | path join ".gitconfig-local")
