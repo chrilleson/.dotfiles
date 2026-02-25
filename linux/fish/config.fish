@@ -11,3 +11,6 @@ fish_add_path ~/.opencode/bin
 set -gx BUN_INSTALL ~/.local/share/bun
 fish_add_path ~/.local/share/bun/bin
 set -gx NUGET_PACKAGES ~/.cache/NuGet/packages
+
+# SSH agent (danhper/fish-ssh-agent)
+set -g SSH_KEY_PATH ~/.ssh/id_ed25519
