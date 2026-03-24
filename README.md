@@ -22,6 +22,11 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 │   ├── packages.yaml    # paru package list
 │   ├── .bashrc.d/       # bashrc fragments
 │   └── install.sh       # Linux install script
+├── macos/               # macOS-specific configs
+│   ├── fish/            # Fish shell config and conf.d/
+│   ├── ghostty/         # Ghostty terminal config
+│   ├── tmux/            # Tmux config
+│   └── install.sh       # macOS install script
 ├── windows/             # Windows-specific configs
 │   ├── nushell/         # Nushell config
 │   ├── vscode/          # VS Code settings and keybindings
@@ -60,6 +65,12 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
    git clone https://aur.archlinux.org/paru-bin.git
    cd paru-bin && makepkg -si
    ```
+
+### macOS
+
+1. **Git** - included with Xcode Command Line Tools: `xcode-select --install`
+2. **Python 3** - included with Xcode Command Line Tools
+3. **Homebrew** - installed automatically by the install script if missing
 
 ## Installation
 
@@ -112,21 +123,45 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
    npm install -g typescript ts-node pnpm eslint prettier @fsouza/prettierd neovim
    ```
 
+### macOS
+
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/chrilleson/.dotfiles.git
+   cd .dotfiles
+   ```
+
+2. Run the installer (installs Homebrew if needed):
+   ```bash
+   ./macos/install.sh
+   ```
+
+3. Edit your machine-specific Git config:
+   ```bash
+   $EDITOR ~/.gitconfig-local
+   ```
+
+4. Install Node LTS and global packages (in a Fish session):
+   ```fish
+   fnm install --lts && fnm default lts-latest
+   npm install -g typescript ts-node pnpm eslint prettier @fsouza/prettierd neovim
+   ```
+
 ## What's Included
 
-| Config | Windows | Linux |
-|--------|---------|-------|
-| **Git** | ✓ | ✓ |
-| **Starship** | ✓ | ✓ |
-| **Neovim** (LazyVim) | ✓ | ✓ |
-| **Node.js** (fnm, eslint, prettier) | ✓ | ✓ |
-| **OpenCode** | | ✓ |
-| **VS Code** | ✓ | ✓ |
-| **Nushell** | ✓ | |
-| **WezTerm** | ✓ | |
-| **Fish** | | ✓ |
-| **Ghostty** | | ✓ |
-| **Tmux** | | ✓ |
+| Config | Windows | Linux | macOS |
+|--------|---------|-------|-------|
+| **Git** | ✓ | ✓ | ✓ |
+| **Starship** | ✓ | ✓ | ✓ |
+| **Neovim** (LazyVim) | ✓ | ✓ | ✓ |
+| **Node.js** (fnm, eslint, prettier) | ✓ | ✓ | ✓ |
+| **OpenCode** | | ✓ | ✓ |
+| **VS Code** | ✓ | ✓ | |
+| **Nushell** | ✓ | | |
+| **WezTerm** | ✓ | | |
+| **Fish** | | ✓ | ✓ |
+| **Ghostty** | | ✓ | ✓ |
+| **Tmux** | | ✓ | ✓ |
 
 ## Notes
 
