@@ -103,6 +103,51 @@
       if: '[ "$(uname)" = "Linux" ]'
       create: true
 
+# Fish shell (macOS)
+- link:
+    ~/.config/fish/config.fish:
+      path: macos/fish/config.fish
+      if: '[ "$(uname)" = "Darwin" ]'
+      create: true
+    ~/.config/fish/conf.d/homebrew.fish:
+      path: macos/fish/conf.d/homebrew.fish
+      if: '[ "$(uname)" = "Darwin" ]'
+      create: true
+    ~/.config/fish/conf.d/starship.fish:
+      path: macos/fish/conf.d/starship.fish
+      if: '[ "$(uname)" = "Darwin" ]'
+      create: true
+    ~/.config/fish/conf.d/fnm.fish:
+      path: macos/fish/conf.d/fnm.fish
+      if: '[ "$(uname)" = "Darwin" ]'
+      create: true
+    ~/.config/fish/conf.d/zoxide.fish:
+      path: macos/fish/conf.d/zoxide.fish
+      if: '[ "$(uname)" = "Darwin" ]'
+      create: true
+    ~/.config/fish/conf.d/fzf.fish:
+      path: macos/fish/conf.d/fzf.fish
+      if: '[ "$(uname)" = "Darwin" ]'
+      create: true
+    ~/.config/fish/functions/dev.fish:
+      path: macos/fish/functions/dev.fish
+      if: '[ "$(uname)" = "Darwin" ]'
+      create: true
+
+# Ghostty (macOS)
+- link:
+    ~/.config/ghostty/config:
+      path: macos/ghostty/config
+      if: '[ "$(uname)" = "Darwin" ]'
+      create: true
+
+# Tmux (macOS)
+- link:
+    ~/.config/tmux/tmux.conf:
+      path: macos/tmux/tmux.conf
+      if: '[ "$(uname)" = "Darwin" ]'
+      create: true
+
 # Opencode config (Linux/macOS)
 - link:
     ~/.config/opencode/config.json:

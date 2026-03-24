@@ -1,0 +1,36 @@
+# Shell — launch tmux (Apple Silicon path; Intel: /usr/local/bin/tmux)
+command = /opt/homebrew/bin/tmux new-session -A -s main
+shell-integration = detect
+
+# Font
+font-family = JetBrainsMono Nerd Font
+font-size = 13
+font-thicken = true
+
+# Theme
+theme = Catppuccin Mocha
+
+# Window
+window-padding-x = 10
+window-padding-y = 10
+window-decoration = true
+window-height = 37
+window-width = 137
+window-theme = auto
+
+# Background
+background-opacity = 0.95
+background-blur-radius = 20
+
+# Cursor
+cursor-style = block
+cursor-style-blink = true
+
+# Keybindings
+keybind = ctrl+shift+b=new_split:right
+keybind = ctrl+shift+n=new_tab
+keybind = ctrl+shift+t=new_window
+
+# Clipboard
+clipboard-read = allow
+clipboard-write = allow
