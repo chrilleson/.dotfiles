@@ -5,6 +5,9 @@
 [init]
 	defaultBranch = main
 
+[pull]
+	rebase = true
+
 # Include machine-specific configuration
 # Create ~/.gitconfig-local with user details and editor preferences
 [include]
