@@ -64,7 +64,7 @@ install_packages() {
         fish starship tmux \
         git-delta fzf zoxide bat ripgrep fd jq eza \
         neovim lazygit gh fnm \
-        opencode
+        anomalyco/tap/opencode
 
     brew install --cask ghostty font-jetbrains-mono-nerd-font
 
