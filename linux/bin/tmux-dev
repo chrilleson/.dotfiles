@@ -1,7 +1,21 @@
 #!/usr/bin/env bash
 
-SESSION="${1:-dev}"
-PROJECT_PATH="${2:-$HOME}"
+TEAMS=0
+POSITIONAL=()
+
+for arg in "$@"; do
+  case $arg in
+    --teams|-T)
+      TEAMS=1
+      ;;
+    *)
+      POSITIONAL+=("$arg")
+      ;;
+  esac
+done
+
+SESSION="${POSITIONAL[0]:-dev}"
+PROJECT_PATH="${POSITIONAL[1]:-$HOME}"
 
 # Don't create if session already exists
 tmux has-session -t "$SESSION" 2>/dev/null && tmux switch-client -t "$SESSION" && exit 0
@@ -10,7 +24,12 @@ tmux new-session -d -s "$SESSION" -c "$PROJECT_PATH"
 
 # Window 1: claude (full width)
 tmux rename-window -t "$SESSION:1" "claude"
-tmux send-keys -t "$SESSION:1" "claude" Enter
+if [ "$TEAMS" = "1" ]; then
+  tmux set-option -t "$SESSION" @teams "1"
+  tmux send-keys -t "$SESSION:1" "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 claude" Enter
+else
+  tmux send-keys -t "$SESSION:1" "claude" Enter
+fi
 
 # Window 2: split — agent left, shell right
 tmux new-window -t "$SESSION:2" -n "workspace" -c "$PROJECT_PATH"
