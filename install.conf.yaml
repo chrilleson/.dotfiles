@@ -88,6 +88,10 @@
       path: linux/fish/functions/dev.fish
       if: '[ "$(uname)" = "Linux" ]'
       create: true
+    ~/.config/fish/functions/tmux-dev.fish:
+      path: linux/fish/functions/tmux-dev.fish
+      if: '[ "$(uname)" = "Linux" ]'
+      create: true
 
 # Ghostty (Linux)
 - link:
@@ -100,6 +104,10 @@
 - link:
     ~/.config/tmux/tmux.conf:
       path: linux/tmux/tmux.conf
+      if: '[ "$(uname)" = "Linux" ]'
+      create: true
+    ~/.local/bin/tmux-dev:
+      path: linux/bin/tmux-dev
       if: '[ "$(uname)" = "Linux" ]'
       create: true
 

@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+SESSION="${1:-dev}"
+PROJECT_PATH="${2:-$HOME}"
+
+# Don't create if session already exists
+tmux has-session -t "$SESSION" 2>/dev/null && tmux switch-client -t "$SESSION" && exit 0
+
+tmux new-session -d -s "$SESSION" -c "$PROJECT_PATH"
+
+# Window 1: claude (full width)
+tmux rename-window -t "$SESSION:1" "claude"
+tmux send-keys -t "$SESSION:1" "claude" Enter
+
+# Window 2: split — agent left, shell right
+tmux new-window -t "$SESSION:2" -n "workspace" -c "$PROJECT_PATH"
+tmux split-window -t "$SESSION:2" -h -c "$PROJECT_PATH"
+tmux select-pane -t "$SESSION:2.1" # focus left pane
+
+# Window 3: logs
+tmux new-window -t "$SESSION:3" -n "logs" -c "$PROJECT_PATH"
+
+# Start on window 1
+tmux select-window -t "$SESSION:1"
+
+# Attach (or switch if already in tmux)
+if [ -z "$TMUX" ]; then
+  tmux attach-session -t "$SESSION"
+else
+  tmux switch-client -t "$SESSION"
+fi
