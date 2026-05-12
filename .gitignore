@@ -1,2 +1,3 @@
 .gitconfig-local
 CLAUDE.md
+.claude/settings.local.json
