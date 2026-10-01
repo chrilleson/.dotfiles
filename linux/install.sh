@@ -44,7 +44,7 @@ check_prerequisites() {
 install_packages() {
     echo -e "${YELLOW}→${NC} Installing packages via paru..."
     paru -S --needed \
-        fish zsh zsh-autosuggestions zsh-syntax-highlighting zsh-completions starship ghostty tmux \
+        zsh zsh-autosuggestions zsh-syntax-highlighting zsh-completions starship ghostty tmux \
         git-delta fzf zoxide bat ripgrep fd jq eza \
         neovim lazygit github-cli \
         fnm-bin opencode-bin dotnet-sdk

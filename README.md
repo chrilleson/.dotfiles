@@ -16,7 +16,6 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 │   ├── opencode/        # opencode config (config.json)
 │   └── nvim/            # LazyVim config
 ├── linux/               # Linux-specific configs
-│   ├── fish/            # Fish shell config and conf.d/
 │   ├── zsh/             # Zsh OS-specific config (os.zsh)
 │   ├── ghostty/         # Ghostty terminal config
 │   ├── tmux/            # Tmux config
@@ -109,18 +108,13 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
    $EDITOR ~/.gitconfig-local
    ```
 
-3. Run the installer:
+3. Run the installer (sets Zsh as your default shell):
    ```bash
    ./linux/install.sh
    ```
 
-4. Set Fish as your default shell:
-   ```bash
-   chsh -s /usr/bin/fish
-   ```
-
-5. Install Node LTS and global packages (in a Fish session):
-   ```fish
+4. Install Node LTS and global packages (in a Zsh session):
+   ```zsh
    fnm install --lts && fnm default lts-latest
    npm install -g typescript ts-node pnpm eslint prettier @fsouza/prettierd neovim
    ```
@@ -161,8 +155,7 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 | **VS Code** | ✓ | ✓ | |
 | **Nushell** | ✓ | | |
 | **WezTerm** | ✓ | | |
-| **Fish** | | ✓ | |
-| **Zsh** | | | ✓ |
+| **Zsh** | | ✓ | ✓ |
 | **Ghostty** | | ✓ | ✓ |
 | **Tmux** | | ✓ | ✓ |
 

@@ -1,12 +1,12 @@
 # Linux-Specific Configuration
 
-This directory contains Linux-specific configuration and package definitions.
+This directory contains Linux-specific configuration.
 
 ## Stack
 
 | Tool | Role |
 |------|------|
-| Fish | Interactive shell |
+| Zsh | Interactive shell |
 | Starship | Prompt |
 | Ghostty | Terminal |
 | Tmux | Multiplexer |
@@ -14,24 +14,9 @@ This directory contains Linux-specific configuration and package definitions.
 
 ## Package Management
 
-`packages.yaml` defines packages for Arch-based distributions, split by source:
-
-- **official** — installed via `pacman`
-- **aur** — installed via `paru`
-- **optional** — not auto-installed, listed for reference
+Packages are installed by `install.sh` via `paru`; its inline `paru -S` list
+is the single source of truth. Add or remove packages by editing that list.
 
 ## Supported Distributions
 
 Optimised for **Arch-based** distros (CachyOS, Arch, Manjaro, EndeavourOS).
-
-## Adding Packages
-
-Edit `packages.yaml` and add to the appropriate section:
-
-```yaml
-official:
-  - your-package
-
-aur:
-  - your-aur-package
-```
