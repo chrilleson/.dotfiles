@@ -61,7 +61,7 @@ install_homebrew() {
 install_packages() {
     echo -e "${YELLOW}→${NC} Installing packages via Homebrew..."
     brew install \
-        fish starship tmux \
+        starship tmux \
         git-delta fzf zoxide bat ripgrep fd jq eza \
         neovim lazygit gh fnm \
         anomalyco/tap/opencode \
@@ -72,19 +72,15 @@ install_packages() {
     echo -e "${GREEN}✓${NC} Packages installed"
 }
 
-setup_fish_shell() {
-    echo -e "${YELLOW}→${NC} Setting Fish as default shell..."
-    FISH_PATH="$(command -v fish)"
+setup_zsh_shell() {
+    echo -e "${YELLOW}→${NC} Checking default shell..."
+    ZSH_PATH="/bin/zsh"
 
-    if ! grep -qF "$FISH_PATH" /etc/shells; then
-        echo "$FISH_PATH" | sudo tee -a /etc/shells > /dev/null
-    fi
-
-    if [ "$SHELL" != "$FISH_PATH" ]; then
-        chsh -s "$FISH_PATH"
-        echo -e "${GREEN}✓${NC} Default shell set to Fish"
+    if [ "$SHELL" != "$ZSH_PATH" ]; then
+        chsh -s "$ZSH_PATH"
+        echo -e "${GREEN}✓${NC} Default shell set to Zsh"
     else
-        echo -e "${GREEN}✓${NC} Fish is already the default shell"
+        echo -e "${GREEN}✓${NC} Zsh is already the default shell"
     fi
 }
 
@@ -114,13 +110,13 @@ final_setup() {
     echo ""
     echo -e "${BLUE}Next steps:${NC}"
     echo "  1. Edit ~/.gitconfig-local with your name and email"
-    echo "  2. Restart your terminal (Fish is now the default shell)"
+    echo "  2. Restart your terminal (Zsh is the default shell)"
     echo "  3. Launch Ghostty"
     echo ""
     echo -e "${BLUE}Installed tools:${NC}"
     command -v git      &> /dev/null && echo "  ✓ git $(git --version | cut -d' ' -f3)"
     command -v nvim     &> /dev/null && echo "  ✓ neovim $(nvim --version | head -n1 | cut -d' ' -f2)"
-    command -v fish     &> /dev/null && echo "  ✓ fish $(fish --version)"
+    command -v zsh      &> /dev/null && echo "  ✓ zsh $(zsh --version | cut -d' ' -f2)"
     command -v starship &> /dev/null && echo "  ✓ starship $(starship --version | cut -d' ' -f2)"
     command -v tmux     &> /dev/null && echo "  ✓ tmux $(tmux -V | cut -d' ' -f2)"
     echo ""
@@ -130,7 +126,7 @@ main() {
     check_prerequisites
     install_homebrew
     install_packages
-    setup_fish_shell
+    setup_zsh_shell
     run_dotbot
     setup_git
     final_setup
