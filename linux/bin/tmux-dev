@@ -2,15 +2,28 @@
 
 SESSION="${1:-dev}"
 PROJECT_PATH="${2:-$HOME}"
+TEAMS=0
+
+# Optional flags (arg 3+): --teams enables Claude Code agent teams
+for arg in "${@:3}"; do
+  if [ "$arg" = "--teams" ]; then
+    TEAMS=1
+  fi
+done
 
 # Don't create if session already exists
 tmux has-session -t "$SESSION" 2>/dev/null && tmux switch-client -t "$SESSION" && exit 0
 
 tmux new-session -d -s "$SESSION" -c "$PROJECT_PATH"
 
-# Window 1: claude (full width)
-tmux rename-window -t "$SESSION:1" "claude"
-tmux send-keys -t "$SESSION:1" "claude" Enter
+# Window 1: claude (with or without teams)
+if [ "$TEAMS" = "1" ]; then
+  tmux rename-window -t "$SESSION:1" "claude [teams]"
+  tmux send-keys -t "$SESSION:1" "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 claude" Enter
+else
+  tmux rename-window -t "$SESSION:1" "claude"
+  tmux send-keys -t "$SESSION:1" "claude" Enter
+fi
 
 # Window 2: split — agent left, shell right
 tmux new-window -t "$SESSION:2" -n "workspace" -c "$PROJECT_PATH"
