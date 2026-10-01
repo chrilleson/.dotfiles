@@ -23,7 +23,7 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 │   ├── .bashrc.d/       # bashrc fragments
 │   └── install.sh       # Linux install script
 ├── macos/               # macOS-specific configs
-│   ├── fish/            # Fish shell config and conf.d/
+│   ├── zsh/             # Zsh OS-specific config (os.zsh)
 │   ├── ghostty/         # Ghostty terminal config
 │   ├── tmux/            # Tmux config
 │   └── install.sh       # macOS install script
@@ -143,8 +143,8 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
    $EDITOR ~/.gitconfig-local
    ```
 
-4. Install Node LTS and global packages (in a Fish session):
-   ```fish
+4. Install Node LTS and global packages (in a Zsh session):
+   ```zsh
    fnm install --lts && fnm default lts-latest
    npm install -g typescript ts-node pnpm eslint prettier @fsouza/prettierd neovim
    ```
@@ -161,7 +161,8 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 | **VS Code** | ✓ | ✓ | |
 | **Nushell** | ✓ | | |
 | **WezTerm** | ✓ | | |
-| **Fish** | | ✓ | ✓ |
+| **Fish** | | ✓ | |
+| **Zsh** | | | ✓ |
 | **Ghostty** | | ✓ | ✓ |
 | **Tmux** | | ✓ | ✓ |
 
