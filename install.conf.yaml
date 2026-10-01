@@ -142,6 +142,17 @@
       if: '[ "$(uname)" = "Darwin" ]'
       create: true
 
+# Zsh (macOS)
+- link:
+    ~/.zshrc:
+      path: shared/zsh/zshrc
+      if: '[ "$(uname)" = "Darwin" ]'
+      create: true
+    ~/.zshrc.os:
+      path: macos/zsh/os.zsh
+      if: '[ "$(uname)" = "Darwin" ]'
+      create: true
+
 # Ghostty (macOS)
 - link:
     ~/.config/ghostty/config:

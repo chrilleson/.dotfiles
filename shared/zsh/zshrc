@@ -1,0 +1,58 @@
+# --- history ---
+HISTFILE=~/.zsh_history
+HISTSIZE=50000
+SAVEHIST=50000
+setopt SHARE_HISTORY HIST_IGNORE_ALL_DUPS HIST_REDUCE_BLANKS
+
+# --- behavior ---
+setopt AUTO_CD INTERACTIVE_COMMENTS
+
+# --- OS-specific: Homebrew, fpath, plugin paths (before compinit and tools) ---
+[[ -f ~/.zshrc.os ]] && source ~/.zshrc.os
+
+# --- paths ---
+typeset -U path   # dedupe PATH
+path=(~/.local/bin ~/.opencode/bin ~/.local/share/bun/bin $path)
+
+# --- XDG-compliant tool locations ---
+export BUN_INSTALL=~/.local/share/bun
+export NUGET_PACKAGES=~/.cache/NuGet/packages
+
+# --- completion (full rebuild at most once a day) ---
+autoload -Uz compinit
+() {
+  setopt localoptions extendedglob
+  if [[ -n ~/.zcompdump(#qN.mh+24) ]]; then compinit; else compinit -C; fi
+}
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
+zstyle ':completion:*' menu select
+
+# --- tools ---
+command -v starship >/dev/null && eval "$(starship init zsh)"
+command -v zoxide   >/dev/null && eval "$(zoxide init zsh)"
+command -v fnm      >/dev/null && eval "$(fnm env --use-on-cd --shell zsh)"
+command -v fzf      >/dev/null && source <(fzf --zsh)
+
+# --- dev: open or attach to a tmux dev session for the current directory ---
+dev() {
+  # tmux rewrites "." and ":" in session names to "_", so sanitize up front
+  local session=${${PWD:t}//[.:]/_}
+
+  if ! tmux has-session -t "=$session" 2>/dev/null; then
+    tmux new-session -d -s "$session" -n editor
+    tmux new-window  -t "$session" -n server
+    tmux new-window  -t "$session" -n git
+    tmux new-window  -t "$session" -n misc
+    tmux select-window -t "$session:editor"
+  fi
+
+  if [[ -n $TMUX ]]; then
+    tmux switch-client -t "$session"
+  else
+    tmux attach -t "$session"
+  fi
+}
+
+# --- plugins (syntax-highlighting must be last) ---
+[[ -r $ZSH_AUTOSUGGEST_PATH ]] && source $ZSH_AUTOSUGGEST_PATH
+[[ -r $ZSH_SYNTAX_HL_PATH   ]] && source $ZSH_SYNTAX_HL_PATH
