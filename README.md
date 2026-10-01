@@ -17,9 +17,9 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 │   └── nvim/            # LazyVim config
 ├── linux/               # Linux-specific configs
 │   ├── fish/            # Fish shell config and conf.d/
+│   ├── zsh/             # Zsh OS-specific config (os.zsh)
 │   ├── ghostty/         # Ghostty terminal config
 │   ├── tmux/            # Tmux config
-│   ├── packages.yaml    # paru package list
 │   ├── .bashrc.d/       # bashrc fragments
 │   └── install.sh       # Linux install script
 ├── macos/               # macOS-specific configs

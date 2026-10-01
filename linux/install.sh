@@ -44,11 +44,23 @@ check_prerequisites() {
 install_packages() {
     echo -e "${YELLOW}→${NC} Installing packages via paru..."
     paru -S --needed \
-        fish starship ghostty tmux \
+        fish zsh zsh-autosuggestions zsh-syntax-highlighting zsh-completions starship ghostty tmux \
         git-delta fzf zoxide bat ripgrep fd jq eza \
         neovim lazygit github-cli \
         fnm-bin opencode-bin dotnet-sdk
     echo -e "${GREEN}✓${NC} Packages installed"
+}
+
+setup_zsh_shell() {
+    echo -e "${YELLOW}→${NC} Checking default shell..."
+    ZSH_PATH="/usr/bin/zsh"
+
+    if [ "$SHELL" != "$ZSH_PATH" ]; then
+        chsh -s "$ZSH_PATH"
+        echo -e "${GREEN}✓${NC} Default shell set to Zsh"
+    else
+        echo -e "${GREEN}✓${NC} Zsh is already the default shell"
+    fi
 }
 
 run_dotbot() {
@@ -90,13 +102,13 @@ final_setup() {
     echo ""
     echo -e "${BLUE}Next steps:${NC}"
     echo "  1. Edit ~/.gitconfig-local with your name and email"
-    echo "  2. Set Fish as default shell: chsh -s /usr/bin/fish"
+    echo "  2. Restart your terminal (Zsh is now the default shell)"
     echo "  3. Launch Ghostty"
     echo ""
     echo -e "${BLUE}Installed tools:${NC}"
     command -v git      &> /dev/null && echo "  ✓ git $(git --version | cut -d' ' -f3)"
     command -v nvim     &> /dev/null && echo "  ✓ neovim $(nvim --version | head -n1 | cut -d' ' -f2)"
-    command -v fish     &> /dev/null && echo "  ✓ fish $(fish --version)"
+    command -v zsh      &> /dev/null && echo "  ✓ zsh $(zsh --version | cut -d' ' -f2)"
     command -v starship &> /dev/null && echo "  ✓ starship $(starship --version | cut -d' ' -f2)"
     command -v tmux     &> /dev/null && echo "  ✓ tmux $(tmux -V | cut -d' ' -f2)"
     echo ""
@@ -105,6 +117,7 @@ final_setup() {
 main() {
     check_prerequisites
     install_packages
+    setup_zsh_shell
     run_dotbot
     setup_git
     install_fonts

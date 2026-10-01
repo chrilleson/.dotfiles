@@ -111,6 +111,17 @@
       if: '[ "$(uname)" = "Linux" ]'
       create: true
 
+# Zsh (Linux)
+- link:
+    ~/.zshrc:
+      path: shared/zsh/zshrc
+      if: '[ "$(uname)" = "Linux" ]'
+      create: true
+    ~/.zshrc.os:
+      path: linux/zsh/os.zsh
+      if: '[ "$(uname)" = "Linux" ]'
+      create: true
+
 # Zsh (macOS)
 - link:
     ~/.zshrc:

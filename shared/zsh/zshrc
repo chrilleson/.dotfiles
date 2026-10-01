@@ -53,6 +53,28 @@ dev() {
   fi
 }
 
+# --- man pages via bat ---
+export MANROFFOPT="-c"
+export MANPAGER="sh -c 'col -bx | bat -l man -p'"
+
+# --- aliases ---
+# modern ls via eza
+alias ls='eza -al --color=always --group-directories-first --icons=always'
+alias la='eza -a --color=always --group-directories-first --icons=always'
+alias ll='eza -l --color=always --group-directories-first --icons=always'
+alias lt='eza -aT --color=always --group-directories-first --icons=always'
+alias l.="eza -a | grep -e '^\.'"
+# cd navigation
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias .....='cd ../../../..'
+alias ......='cd ../../../../..'
+# colorized grep
+alias grep='grep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias egrep='egrep --color=auto'
+
 # --- plugins (syntax-highlighting must be last) ---
 [[ -r $ZSH_AUTOSUGGEST_PATH ]] && source $ZSH_AUTOSUGGEST_PATH
 [[ -r $ZSH_SYNTAX_HL_PATH   ]] && source $ZSH_SYNTAX_HL_PATH
