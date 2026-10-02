@@ -55,9 +55,14 @@ setup_zsh_shell() {
     echo -e "${YELLOW}→${NC} Checking default shell..."
     ZSH_PATH="/usr/bin/zsh"
 
-    if [ "$SHELL" != "$ZSH_PATH" ]; then
+    # Check the login shell from the user database, not $SHELL: $SHELL
+    # reflects the current session and can lag behind a recent chsh.
+    local current_shell
+    current_shell="$(getent passwd "$USER" | cut -d: -f7)"
+
+    if [ "$current_shell" != "$ZSH_PATH" ]; then
         chsh -s "$ZSH_PATH"
-        echo -e "${GREEN}✓${NC} Default shell set to Zsh"
+        echo -e "${GREEN}✓${NC} Default shell set to Zsh (log out and back in to apply)"
     else
         echo -e "${GREEN}✓${NC} Zsh is already the default shell"
     fi
