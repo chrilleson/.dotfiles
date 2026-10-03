@@ -67,7 +67,7 @@ install_packages() {
         anomalyco/tap/opencode \
         zsh-autosuggestions zsh-syntax-highlighting zsh-completions
 
-    brew install --cask ghostty font-jetbrains-mono-nerd-font
+    brew install --cask ghostty font-jetbrains-mono-nerd-font orbstack
 
     echo -e "${GREEN}✓${NC} Packages installed"
 }
@@ -117,6 +117,7 @@ final_setup() {
     echo "  1. Edit ~/.gitconfig-local with your name and email"
     echo "  2. Restart your terminal (Zsh is the default shell)"
     echo "  3. Launch Ghostty"
+    echo "  4. Open OrbStack once to finish Docker setup"
     echo ""
     echo -e "${BLUE}Installed tools:${NC}"
     command -v git      &> /dev/null && echo "  ✓ git $(git --version | cut -d' ' -f3)"
@@ -124,6 +125,7 @@ final_setup() {
     command -v zsh      &> /dev/null && echo "  ✓ zsh $(zsh --version | cut -d' ' -f2)"
     command -v starship &> /dev/null && echo "  ✓ starship $(starship --version | cut -d' ' -f2)"
     command -v tmux     &> /dev/null && echo "  ✓ tmux $(tmux -V | cut -d' ' -f2)"
+    command -v docker   &> /dev/null && echo "  ✓ docker $(docker --version | cut -d' ' -f3 | tr -d ',')"
     echo ""
 }
 

@@ -47,7 +47,8 @@ install_packages() {
         zsh zsh-autosuggestions zsh-syntax-highlighting zsh-completions starship ghostty tmux \
         git-delta fzf zoxide bat ripgrep fd jq eza \
         neovim lazygit github-cli \
-        fnm-bin opencode-bin dotnet-sdk
+        fnm-bin opencode-bin dotnet-sdk \
+        docker docker-compose docker-buildx
     echo -e "${GREEN}✓${NC} Packages installed"
 }
 
@@ -86,6 +87,18 @@ setup_git() {
     fi
 }
 
+setup_docker() {
+    echo -e "${YELLOW}→${NC} Setting up Docker..."
+    sudo systemctl enable --now docker.service
+
+    if ! id -nG "$USER" | grep -qw docker; then
+        sudo usermod -aG docker "$USER"
+        echo -e "${GREEN}✓${NC} Added $USER to the docker group (log out and back in to apply)"
+    else
+        echo -e "${GREEN}✓${NC} $USER is already in the docker group"
+    fi
+}
+
 install_fonts() {
     echo -e "${YELLOW}→${NC} Installing JetBrainsMono Nerd Font..."
     mkdir -p ~/.local/share/fonts
@@ -107,7 +120,7 @@ final_setup() {
     echo ""
     echo -e "${BLUE}Next steps:${NC}"
     echo "  1. Edit ~/.gitconfig-local with your name and email"
-    echo "  2. Restart your terminal (Zsh is now the default shell)"
+    echo "  2. Log out and back in (applies Zsh as default shell and docker group)"
     echo "  3. Launch Ghostty"
     echo ""
     echo -e "${BLUE}Installed tools:${NC}"
@@ -116,6 +129,7 @@ final_setup() {
     command -v zsh      &> /dev/null && echo "  ✓ zsh $(zsh --version | cut -d' ' -f2)"
     command -v starship &> /dev/null && echo "  ✓ starship $(starship --version | cut -d' ' -f2)"
     command -v tmux     &> /dev/null && echo "  ✓ tmux $(tmux -V | cut -d' ' -f2)"
+    command -v docker   &> /dev/null && echo "  ✓ docker $(docker --version | cut -d' ' -f3 | tr -d ',')"
     echo ""
 }
 
@@ -125,6 +139,7 @@ main() {
     setup_zsh_shell
     run_dotbot
     setup_git
+    setup_docker
     install_fonts
     final_setup
 }
