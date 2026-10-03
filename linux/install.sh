@@ -127,7 +127,7 @@ final_setup() {
     command -v git      &> /dev/null && echo "  ✓ git $(git --version | cut -d' ' -f3)"
     command -v nvim     &> /dev/null && echo "  ✓ neovim $(nvim --version | head -n1 | cut -d' ' -f2)"
     command -v zsh      &> /dev/null && echo "  ✓ zsh $(zsh --version | cut -d' ' -f2)"
-    command -v starship &> /dev/null && echo "  ✓ starship $(starship --version | cut -d' ' -f2)"
+    command -v starship &> /dev/null && echo "  ✓ starship $(starship --version | head -n1 | cut -d' ' -f2)"
     command -v tmux     &> /dev/null && echo "  ✓ tmux $(tmux -V | cut -d' ' -f2)"
     command -v docker   &> /dev/null && echo "  ✓ docker $(docker --version | cut -d' ' -f3 | tr -d ',')"
     echo ""
