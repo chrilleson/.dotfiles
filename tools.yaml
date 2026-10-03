@@ -143,5 +143,23 @@ gh:
   macos: [gh]
   linux: [github-cli]
 
+# Proton Pass CLI. No Scoop package, so Windows uses the official script,
+# installed into ~/.local/bin (already on PATH via install.ps1).
+pass-cli:
+  macos: [protonpass/tap/pass-cli]
+  linux: [proton-pass-cli-bin]
+  install:
+    windows:
+      - >-
+        if not exist "%USERPROFILE%\.local\bin\pass-cli.exe"
+        powershell -NoProfile -ExecutionPolicy Bypass -Command
+        "$env:PROTON_PASS_CLI_INSTALL_DIR = Join-Path $HOME '.local\bin';
+        $script = Join-Path $env:TEMP 'pass-cli-install.ps1';
+        Invoke-WebRequest -Uri https://proton.me/download/pass-cli/install.ps1 -OutFile $script;
+        & $script"
+  reset:
+    windows:
+      - if exist "%USERPROFILE%\.local\bin\pass-cli.exe" del "%USERPROFILE%\.local\bin\pass-cli.exe"
+
 7zip:
   windows: [7zip]

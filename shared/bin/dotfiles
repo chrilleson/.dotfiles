@@ -502,7 +502,7 @@ def cmd_list(args):
     for name, tool in tools.items():
         mine = unique([l for l in tool_links(tool, links) if applies(l)])
         pkgs = tool.get(OS, [])
-        if not mine and not pkgs:
+        if not mine and not pkgs and not (tool.get("install") or {}).get(OS):
             continue  # nothing for this OS
         linked = f"{sum(1 for l in mine if owned(l))}/{len(mine)}" if mine else "-"
         shown = " ".join(

@@ -192,6 +192,7 @@ in `tools.yaml`, so reset can't remove them.
 | **Neovim** (LazyVim) | ✓ | ✓ | ✓ |
 | **Node.js** (fnm, eslint, prettier) | ✓ | ✓ | ✓ |
 | **VS Code** | ✓ | ✓ | ✓ |
+| **Proton Pass CLI** (`pass-cli`) | ✓ | ✓ | ✓ |
 | **PowerShell 7** | ✓ | | |
 | **WezTerm** | ✓ | | |
 | **Zsh** | | ✓ | ✓ |

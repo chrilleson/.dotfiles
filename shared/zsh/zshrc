@@ -32,6 +32,7 @@ command -v starship >/dev/null && eval "$(starship init zsh)"
 command -v zoxide   >/dev/null && eval "$(zoxide init zsh)"
 command -v fnm      >/dev/null && eval "$(fnm env --use-on-cd --shell zsh)"
 command -v fzf      >/dev/null && source <(fzf --zsh)
+command -v pass-cli >/dev/null && source <(pass-cli completions zsh)
 
 # --- dev: open or attach to a tmux dev session for the current directory ---
 dev() {
