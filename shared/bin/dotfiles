@@ -85,7 +85,7 @@ def applies(link):
     if not cond:
         return True
     if cond not in _conditions:
-        kwargs = {} if OS == "windows" else {"executable": os.environ.get("SHELL") or "/bin/sh"}
+        kwargs = {} if OS == "windows" else {"executable": "/bin/bash"}  # same shell run_dotbot gives dotbot
         _conditions[cond] = subprocess.run(
             cond, shell=True, cwd=REPO, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **kwargs
         ).returncode == 0
