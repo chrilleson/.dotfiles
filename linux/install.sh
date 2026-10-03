@@ -41,20 +41,26 @@ check_prerequisites() {
     echo -e "${GREEN}✓${NC} All prerequisites met"
 }
 
-install_packages() {
-    echo -e "${YELLOW}→${NC} Installing packages via paru..."
-    paru -S --needed \
-        zsh zsh-autosuggestions zsh-syntax-highlighting zsh-completions starship ghostty tmux \
-        git-delta fzf zoxide bat ripgrep fd jq eza \
-        neovim lazygit github-cli visual-studio-code-bin \
-        fnm-bin dotnet-sdk \
-        docker docker-compose docker-buildx
-    echo -e "${GREEN}✓${NC} Packages installed"
+ensure_pyyaml() {
+    if ! python3 -c 'import yaml' &> /dev/null; then
+        echo -e "${YELLOW}→${NC} Installing PyYAML (needed by dotbot and the dotfiles CLI)..."
+        sudo pacman -S --needed python-yaml
+    fi
+    echo -e "${GREEN}✓${NC} PyYAML ready"
+}
+
+# Packages, links and per-tool setup (docker, fonts) are defined in tools.yaml
+install_tools() {
+    echo -e "${YELLOW}→${NC} Installing tools and linking configs..."
+    ./shared/bin/dotfiles install --all --yes
 }
 
 setup_zsh_shell() {
     echo -e "${YELLOW}→${NC} Checking default shell..."
     ZSH_PATH="/usr/bin/zsh"
+
+    # zsh is a prerequisite, not a tool, so `dotfiles reset` never removes the login shell
+    paru -S --needed zsh
 
     # Check the login shell from the user database, not $SHELL: $SHELL
     # reflects the current session and can lag behind a recent chsh.
@@ -69,13 +75,6 @@ setup_zsh_shell() {
     fi
 }
 
-run_dotbot() {
-    echo -e "${YELLOW}→${NC} Running dotbot..."
-    chmod +x dotbot/bin/dotbot
-    SHELL=/bin/bash ./dotbot/bin/dotbot -d . -c install.conf.yaml
-    echo -e "${GREEN}✓${NC} Dotbot complete"
-}
-
 setup_git() {
     if [ ! -f ~/.gitconfig-local ]; then
         echo -e "${YELLOW}→${NC} Creating ~/.gitconfig-local..."
@@ -85,31 +84,6 @@ setup_git() {
     else
         echo -e "${GREEN}✓${NC} ~/.gitconfig-local already exists"
     fi
-}
-
-setup_docker() {
-    echo -e "${YELLOW}→${NC} Setting up Docker..."
-    sudo systemctl enable --now docker.service
-
-    if ! id -nG "$USER" | grep -qw docker; then
-        sudo usermod -aG docker "$USER"
-        echo -e "${GREEN}✓${NC} Added $USER to the docker group (log out and back in to apply)"
-    else
-        echo -e "${GREEN}✓${NC} $USER is already in the docker group"
-    fi
-}
-
-install_fonts() {
-    echo -e "${YELLOW}→${NC} Installing JetBrainsMono Nerd Font..."
-    mkdir -p ~/.local/share/fonts
-    if [ ! -f ~/.local/share/fonts/JetBrainsMonoNerdFont-Regular.ttf ]; then
-        curl -fLo /tmp/JetBrainsMono.zip \
-            https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip
-        unzip -o /tmp/JetBrainsMono.zip -d ~/.local/share/fonts/JetBrainsMono
-        rm /tmp/JetBrainsMono.zip
-        fc-cache -f
-    fi
-    echo -e "${GREEN}✓${NC} Fonts installed"
 }
 
 final_setup() {
@@ -135,12 +109,10 @@ final_setup() {
 
 main() {
     check_prerequisites
-    install_packages
+    ensure_pyyaml
     setup_zsh_shell
-    run_dotbot
+    install_tools
     setup_git
-    setup_docker
-    install_fonts
     final_setup
 }
 

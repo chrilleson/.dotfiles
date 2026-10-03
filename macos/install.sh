@@ -58,17 +58,18 @@ install_homebrew() {
     echo -e "${GREEN}✓${NC} Homebrew ready"
 }
 
-install_packages() {
-    echo -e "${YELLOW}→${NC} Installing packages via Homebrew..."
-    brew install \
-        starship tmux \
-        git-delta fzf zoxide bat ripgrep fd jq eza \
-        neovim lazygit gh fnm \
-        zsh-autosuggestions zsh-syntax-highlighting zsh-completions
+ensure_pyyaml() {
+    if ! python3 -c 'import yaml' &> /dev/null; then
+        echo -e "${YELLOW}→${NC} Installing PyYAML (needed by dotbot and the dotfiles CLI)..."
+        python3 -m pip install --user pyyaml
+    fi
+    echo -e "${GREEN}✓${NC} PyYAML ready"
+}
 
-    brew install --cask ghostty font-jetbrains-mono-nerd-font orbstack visual-studio-code
-
-    echo -e "${GREEN}✓${NC} Packages installed"
+# Packages and links are defined in tools.yaml and install.conf.yaml
+install_tools() {
+    echo -e "${YELLOW}→${NC} Installing tools and linking configs..."
+    ./shared/bin/dotfiles install --all --yes
 }
 
 setup_zsh_shell() {
@@ -86,13 +87,6 @@ setup_zsh_shell() {
     else
         echo -e "${GREEN}✓${NC} Zsh is already the default shell"
     fi
-}
-
-run_dotbot() {
-    echo -e "${YELLOW}→${NC} Running dotbot..."
-    chmod +x dotbot/bin/dotbot
-    SHELL=/bin/bash ./dotbot/bin/dotbot -d . -c install.conf.yaml
-    echo -e "${GREEN}✓${NC} Dotbot complete"
 }
 
 setup_git() {
@@ -131,9 +125,9 @@ final_setup() {
 main() {
     check_prerequisites
     install_homebrew
-    install_packages
+    ensure_pyyaml
+    install_tools
     setup_zsh_shell
-    run_dotbot
     setup_git
     final_setup
 }

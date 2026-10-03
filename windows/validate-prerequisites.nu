@@ -23,6 +23,16 @@ def main [] {
         $all_checks_passed = false
     }
 
+    # PyYAML (required by dotbot and the dotfiles CLI)
+    let python = (['python', 'python3'] | where {|cmd| (which $cmd | is-not-empty)} | get 0? | default "python")
+    if ((^$python -c "import yaml" | complete).exit_code == 0) {
+        print $"(ansi green)✓ PyYAML is installed(ansi reset)"
+    } else {
+        print $"(ansi red_bold)✗ PyYAML is not installed(ansi reset)"
+        print $"  Install with: (ansi cyan)($python) -m pip install pyyaml(ansi reset)\n"
+        $all_checks_passed = false
+    }
+
     # Scoop
     if (which scoop | is-not-empty) {
         print $"(ansi green)✓ Scoop is installed(ansi reset)"

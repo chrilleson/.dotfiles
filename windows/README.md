@@ -4,31 +4,24 @@ This directory contains Windows-specific configuration and package definitions f
 
 ## Package Management
 
-### Package List (`packages.json`)
+### Package List (`tools.yaml`)
 
-The `packages.json` file defines packages to be installed via Scoop:
-
-- **buckets**: Additional Scoop buckets to install (extras, nerd-fonts)
-- **main**: Core packages from the main Scoop bucket
-- **extras**: GUI applications and additional tools from extras bucket
-- **nerd-fonts**: Nerd Font variants
-- **optional**: Additional packages that can be manually installed
+Packages are listed per tool in `tools.yaml` at the repo root, under the `windows:` key.
+Apps from other Scoop buckets are written as `bucket/app` (for example `extras/wezterm`);
+the bucket is added automatically before installing.
 
 ### Package Installation
 
-Packages are automatically installed when you run:
+Packages are installed when you run:
 ```powershell
-.\install.ps1
+nu windows/install.nu
 ```
 
-Or using Nushell:
-```powershell
-nu install.nu
-```
-
-Or manually:
-```powershell
-nu windows/install-packages.nu
+Or install and reset individual tools with the `dotfiles` command (after the first install):
+```nu
+dotfiles install            # pick tools interactively
+dotfiles install wezterm    # install one tool
+dotfiles list               # see what's installed
 ```
 
 ### Scoop Package Manager
@@ -53,7 +46,8 @@ Before running the installer, ensure you have the following installed:
 
 2. **Python**
    - Download from: https://www.python.org/
-   - Required for dotbot installation framework
+   - Required for dotbot installation framework and the `dotfiles` command
+   - Also install PyYAML: `python -m pip install pyyaml`
 
 3. **Scoop**
    - Install with PowerShell:
@@ -81,7 +75,6 @@ The `validate-prereqs.ps1` script automatically checks for symlink permissions a
 
 ### Core Tools (main bucket)
 
-- **git** - Version control system
 - **delta** - Better git diff viewer
 - **fzf** - Fuzzy finder
 - **zoxide** - Smarter cd command
@@ -199,27 +192,15 @@ If JetBrainsMono font doesn't appear in applications after installation:
 
 ## Adding Custom Packages
 
-To add your own packages to the installation:
+Add a tool to `tools.yaml` at the repo root:
 
-1. Edit `windows/packages.json`
-2. Add packages to the appropriate section:
-   - `main`: For core command-line tools
-   - `extras`: For GUI applications
-   - `nerd-fonts`: For font variants
-   - `optional`: For optional packages (not auto-installed)
-
-Example:
-```json
-{
-  "main": [
-    "git",
-    "your-package-name"
-  ],
-  "extras": [
-    "your-gui-app"
-  ]
-}
+```yaml
+your-tool:
+  windows: [your-package-name]      # main bucket
+  # windows: [extras/your-gui-app]  # other buckets
 ```
+
+Then install it with `dotfiles install your-tool`.
 
 Search for available packages:
 ```powershell
@@ -230,7 +211,7 @@ scoop search package-name
 
 ### Core Scripts
 
-- **install-packages.nu** - Main package installation script
+- **install.nu** - Main installation script (runs `dotfiles install --all`)
 - **validate-prereqs.ps1** - Prerequisite validation script
 
 ### Usage
@@ -241,8 +222,8 @@ All scripts are automatically called by `install.ps1` or `install.nu`. To run in
 # Validate prerequisites only
 powershell -ExecutionPolicy Bypass -File .\windows\validate-prereqs.ps1
 
-# Install packages only
-nu windows/install-packages.nu
+# Install packages and link configs only
+python shared/bin/dotfiles install --all
 ```
 
 ## Next Steps After Installation

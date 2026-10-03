@@ -1,11 +1,7 @@
 #!/usr/bin/env nu
 # Dotfiles installation script for Windows
 
-def main [...args: string] {
-    const CONFIG = "install.conf.yaml"
-    const DOTBOT_DIR = "dotbot"
-    const DOTBOT_BIN = "bin/dotbot"
-
+def main [] {
     # Derive repo root from this script's location (windows/install.nu → parent dir)
     let BASEDIR = ($env.CURRENT_FILE | path dirname | path dirname)
 
@@ -20,9 +16,6 @@ def main [...args: string] {
     # Validate prerequisites
     nu ($env.CURRENT_FILE | path dirname | path join "validate-prerequisites.nu")
 
-    # Install Scoop packages
-    nu ($env.CURRENT_FILE | path dirname | path join "install-packages.nu")
-
     # Find Python executable
     let python = (
         ['python', 'python3']
@@ -35,10 +28,9 @@ def main [...args: string] {
         exit 1
     }
 
-    # Run dotbot
-    print $"\n(ansi cyan_bold)=== Running dotbot configuration ===(ansi reset)"
-    let dotbot_path = ($BASEDIR | path join $DOTBOT_DIR | path join $DOTBOT_BIN)
-    ^$python $dotbot_path -d $BASEDIR -c $CONFIG ...$args
+    # Install Scoop packages and link configs (defined in tools.yaml and install.conf.yaml)
+    print $"\n(ansi cyan_bold)=== Installing tools and linking configs ===(ansi reset)"
+    ^$python ($BASEDIR | path join "shared" "bin" "dotfiles") install --all --yes
 
     # Setup Node.js
     print $"\n(ansi cyan_bold)=== Setting up Node.js ===(ansi reset)"

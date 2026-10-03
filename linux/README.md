@@ -14,9 +14,10 @@ This directory contains Linux-specific configuration.
 
 ## Package Management
 
-Packages are installed by `install.sh` via `paru`; its inline `paru -S` list
-is the single source of truth. Add or remove packages by editing that list, and
-update `reset.conf.yaml` so `dotfiles reset` can uninstall them.
+Packages are listed per tool in `tools.yaml` at the repo root (the `linux:` key),
+and installed via `paru` by `dotfiles install`. `install.sh` sets up prerequisites
+(PyYAML, zsh as the login shell) and then runs `dotfiles install --all`, which also
+sets up Docker and the JetBrainsMono Nerd Font.
 
 ## Supported Distributions
 

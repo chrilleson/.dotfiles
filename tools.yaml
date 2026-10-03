@@ -1,12 +1,16 @@
-# Tools that `dotfiles reset` can remove.
+# Tools the `dotfiles` command installs and resets.
+#
+# This is the only package list: the install scripts run `dotfiles install --all`.
 #
 # Each tool lists:
-#   links:                 repo paths whose symlinks (from install.conf.yaml) get removed
-#   macos/linux/windows:   packages to uninstall (brew / paru / scoop)
-#   run:                   per-OS shell commands to run before uninstalling
+#   links:                 repo paths whose links (from install.conf.yaml) belong to this tool
+#   macos/linux/windows:   packages (brew / paru / scoop; scoop takes bucket/app)
+#   install:               per-OS shell commands run after installing packages and linking
+#   reset:                 per-OS shell commands run before uninstalling
 #
-# Keep this in sync with the package lists in the install scripts.
-# Prerequisites (git, python, zsh, nushell, scoop, brew, paru) are never uninstalled.
+# Install commands run on every install, so keep them idempotent.
+# Prerequisites (git, python, zsh, nushell, brew, paru, scoop) are set up by the
+# install scripts and never listed here, so reset can't remove them.
 
 dotfiles:
   links: [shared/bin]
@@ -45,7 +49,7 @@ ghostty:
 
 wezterm:
   links: [windows/wezterm]
-  windows: [wezterm]
+  windows: [extras/wezterm]
 
 neovim:
   links: [shared/nvim]
@@ -57,7 +61,7 @@ vscode:
   links: [shared/vscode]
   macos: [visual-studio-code]
   linux: [visual-studio-code-bin]
-  windows: [vscode]
+  windows: [extras/vscode]
 
 node:
   links: [shared/node]
@@ -68,7 +72,11 @@ node:
 docker:
   macos: [orbstack]
   linux: [docker, docker-compose, docker-buildx]
-  run:
+  install:
+    linux:
+      - sudo systemctl enable --now docker.service
+      - id -nG "$USER" | grep -qw docker || sudo usermod -aG docker "$USER"
+  reset:
     linux: [sudo systemctl disable --now docker.service docker.socket]
 
 dotnet:
@@ -76,8 +84,16 @@ dotnet:
 
 fonts:
   macos: [font-jetbrains-mono-nerd-font]
-  windows: [JetBrainsMono-NF]
-  run:
+  windows: [nerd-fonts/JetBrainsMono-NF]
+  install:
+    linux:
+      - >-
+        [ -d ~/.local/share/fonts/JetBrainsMono ] || {
+        mkdir -p ~/.local/share/fonts &&
+        curl -fLo /tmp/JetBrainsMono.zip https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip &&
+        unzip -o /tmp/JetBrainsMono.zip -d ~/.local/share/fonts/JetBrainsMono &&
+        rm /tmp/JetBrainsMono.zip && fc-cache -f; }
+  reset:
     linux: [rm -rf ~/.local/share/fonts/JetBrainsMono && fc-cache -f]
 
 fzf:
@@ -117,7 +133,7 @@ eza:
 lazygit:
   macos: [lazygit]
   linux: [lazygit]
-  windows: [lazygit]
+  windows: [extras/lazygit]
 
 gh:
   macos: [gh]

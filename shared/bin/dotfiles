@@ -1,23 +1,27 @@
 #!/usr/bin/env python3
 """dotfiles: install, link and reset this dotfiles repo.
 
-  dotfiles install            run this OS's install script
-  dotfiles link               re-run dotbot (symlinks only)
-  dotfiles list               show tools and what's linked/installed
-  dotfiles reset              pick tools to reset interactively
-  dotfiles reset TOOL...      reset specific tools (-n preview, -y no prompt)
-  dotfiles reset --all        reset everything
+  dotfiles install              pick tools to install interactively
+  dotfiles install TOOL...      install specific tools (-n preview, -y no prompt)
+  dotfiles install --all        install everything and link all configs
+  dotfiles link                 re-run dotbot (symlinks only)
+  dotfiles list                 show tools and what's linked/installed
+  dotfiles reset                pick tools to reset interactively
+  dotfiles reset TOOL...        reset specific tools (-n preview, -y no prompt)
+  dotfiles reset --all          reset everything
 
-Tools are defined in reset.conf.yaml; symlinks come from install.conf.yaml.
+Tools are defined in tools.yaml; symlinks come from install.conf.yaml.
 Reset only removes symlinks that point into this repo, never real files.
 On Windows the Nushell `dotfiles` command runs this through Python.
 """
 
 import argparse
+import json
 import os
 import shutil
 import subprocess
 import sys
+import tempfile
 
 try:
     import yaml
@@ -27,6 +31,7 @@ except ImportError:
 # shared/bin/dotfiles -> repo root (resolves the ~/.local/bin symlink)
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 OS = {"darwin": "macos", "linux": "linux", "win32": "windows"}.get(sys.platform)
+sys.stdout.reconfigure(line_buffering=True)  # keep our output in order with brew/dotbot output
 
 if sys.stdout.isatty():
     if OS == "windows":
@@ -44,32 +49,72 @@ def load_yaml(name):
 
 
 def load_tools():
-    return {name: tool or {} for name, tool in load_yaml("reset.conf.yaml").items()}
+    return {name: tool or {} for name, tool in load_yaml("tools.yaml").items()}
 
 
 def install_links():
-    """(destination, repo source) pairs for every link in install.conf.yaml."""
+    """Every link in install.conf.yaml. The same destination can be listed once per OS."""
     links = []
     for directive in load_yaml("install.conf.yaml"):
-        for dest, spec in (directive.get("link") or {}).items():
+        for key, spec in (directive.get("link") or {}).items():
             source = spec["path"] if isinstance(spec, dict) else spec
-            links.append((os.path.expanduser(dest), source))
-    return list(dict.fromkeys(links))  # same link can be listed per OS
+            cond = spec.get("if") if isinstance(spec, dict) else None
+            links.append({"key": key, "dest": os.path.expanduser(key), "source": source, "spec": spec, "if": cond})
+    return links
 
 
-def owned(dest, source):
-    """True if dest is a symlink that points at source in this repo."""
-    return os.path.islink(dest) and os.path.realpath(dest) == os.path.realpath(os.path.join(REPO, source))
+def unique(links):
+    """Drop repeated destinations, keeping the first."""
+    seen = set()
+    return [l for l in links if not (l["dest"] in seen or seen.add(l["dest"]))]
+
+
+def link_defaults():
+    for directive in load_yaml("install.conf.yaml"):
+        if "defaults" in directive:
+            return directive["defaults"]
+    return {}
+
+
+_conditions = {}
+
+
+def applies(link):
+    """Evaluate a link's `if` the way dotbot does: shell exit status 0 means true."""
+    cond = link["if"]
+    if not cond:
+        return True
+    if cond not in _conditions:
+        kwargs = {} if OS == "windows" else {"executable": os.environ.get("SHELL") or "/bin/sh"}
+        _conditions[cond] = subprocess.run(
+            cond, shell=True, cwd=REPO, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **kwargs
+        ).returncode == 0
+    return _conditions[cond]
+
+
+def owned(link):
+    """True if the link's destination is a symlink that points at its source in this repo."""
+    dest = link["dest"]
+    return os.path.islink(dest) and os.path.realpath(dest) == os.path.realpath(os.path.join(REPO, link["source"]))
 
 
 def under(source, prefixes):
     return any(source == p or source.startswith(p.rstrip("/") + "/") for p in prefixes)
 
 
+def tool_links(tool, links):
+    return [l for l in links if under(l["source"], tool.get("links", []))]
+
+
 # --- package managers ------------------------------------------------------------
 
 def scoop():
     return shutil.which("scoop") or "scoop"
+
+
+def pkg_name(pkg):
+    """Scoop packages can be written bucket/app; the installed name is the app."""
+    return pkg.split("/")[-1]
 
 
 def installed_packages():
@@ -88,21 +133,57 @@ def installed_packages():
 
 
 def is_installed(pkg, installed):
-    return (pkg.lower() if OS == "windows" else pkg) in installed
+    name = pkg_name(pkg)
+    return (name.lower() if OS == "windows" else name) in installed
 
 
-def uninstall_cmd(pkgs):
-    return {
-        "macos": ["brew", "uninstall"] + pkgs,
-        "linux": ["paru", "-Rns", "--noconfirm"] + pkgs,
-        "windows": [scoop(), "uninstall"] + pkgs,
-    }[OS]
+def install_packages(pkgs):
+    if OS == "macos":
+        subprocess.run(["brew", "install"] + pkgs, check=True)
+    elif OS == "linux":
+        subprocess.run(["paru", "-S", "--needed"] + pkgs, check=True)
+    else:
+        for bucket in {p.split("/")[0] for p in pkgs if "/" in p}:
+            subprocess.run([scoop(), "bucket", "add", bucket], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run([scoop(), "install"] + pkgs, check=True)
 
 
-# --- reset -----------------------------------------------------------------------
+def uninstall_packages(pkgs):
+    names = [pkg_name(p) for p in pkgs]
+    if OS == "macos":
+        subprocess.run(["brew", "uninstall"] + names, check=True)
+    elif OS == "linux":
+        subprocess.run(["paru", "-Rns", "--noconfirm"] + names, check=True)
+    else:
+        subprocess.run([scoop(), "uninstall"] + names, check=True)
 
-def build_plan(names, tools, include_unclaimed=False):
-    """Per tool: symlinks to remove, commands to run, installed packages to uninstall."""
+
+def run_dotbot(config):
+    env = dict(os.environ)
+    if OS != "windows":
+        env["SHELL"] = "/bin/bash"
+    dotbot = [sys.executable, os.path.join("dotbot", "bin", "dotbot"), "-d", ".", "-c", config]
+    subprocess.run(dotbot, cwd=REPO, env=env, check=True)
+
+
+def link_only(links):
+    """Run dotbot with a config holding just these links, so it handles if/create/relink as usual."""
+    config = [{"defaults": {"link": link_defaults().get("link", {})}}, {"link": {l["key"]: l["spec"] for l in links}}]
+    fd, path = tempfile.mkstemp(suffix=".json")
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(config, f)
+        run_dotbot(path)
+    finally:
+        os.remove(path)
+
+
+# --- plans -------------------------------------------------------------------------
+#
+# A plan is a list of steps, one per tool:
+#   {"name", "action": "install"|"reset", "packages": [...], "links": [link...], "run": [cmd...]}
+
+def build_reset_plan(names, tools, include_unclaimed=False):
     links = install_links()
     installed = installed_packages()
     plan = []
@@ -110,40 +191,60 @@ def build_plan(names, tools, include_unclaimed=False):
         tool = tools[name]
         plan.append({
             "name": name,
-            "links": [d for d, s in links if under(s, tool.get("links", [])) and owned(d, s)],
-            "run": (tool.get("run") or {}).get(OS, []),
+            "action": "reset",
+            "links": unique([l for l in tool_links(tool, links) if owned(l)]),
+            "run": (tool.get("reset") or {}).get(OS, []),
             "packages": [p for p in tool.get(OS, []) if is_installed(p, installed)],
         })
 
     if include_unclaimed:
         claimed = [p for t in tools.values() for p in t.get("links", [])]
-        rest = [d for d, s in links if not under(s, claimed) and owned(d, s)]
+        rest = unique([l for l in links if not under(l["source"], claimed) and owned(l)])
         if rest:
-            plan.append({"name": "other links", "links": rest, "run": [], "packages": []})
+            plan.append({"name": "other links", "action": "reset", "links": rest, "run": [], "packages": []})
 
     return [step for step in plan if step["links"] or step["run"] or step["packages"]]
 
 
+def build_install_plan(names, tools):
+    links = install_links()
+    installed = installed_packages()
+    plan = []
+    for name in names:
+        tool = tools[name]
+        plan.append({
+            "name": name,
+            "action": "install",
+            "links": unique([l for l in tool_links(tool, links) if applies(l) and not owned(l)]),
+            "run": (tool.get("install") or {}).get(OS, []),
+            "packages": [p for p in tool.get(OS, []) if not is_installed(p, installed)],
+        })
+    return [step for step in plan if step["links"] or step["run"] or step["packages"]]
+
+
 def summary(step):
+    install = step["action"] == "install"
     parts = []
+    if step["packages"]:
+        parts.append(("install " if install else "uninstall ") + " ".join(step["packages"]))
     if step["links"]:
-        parts.append(f"unlink {len(step['links'])}")
+        parts.append(f"{'link' if install else 'unlink'} {len(step['links'])}")
     if step["run"]:
         parts.append(f"run {len(step['run'])}")
-    if step["packages"]:
-        parts.append("uninstall " + " ".join(step["packages"]))
     return " · ".join(parts)
 
 
 def print_plan(plan):
     for step in plan:
-        print(f"{BLUE}{step['name']}{NC}")
-        for dest in step["links"]:
-            print(f"  unlink     {dest}")
-        for cmd in step["run"]:
-            print(f"  run        {cmd}")
+        install = step["action"] == "install"
+        # same order the steps run in
+        lines = [f"  {'link' if install else 'unlink':<9}  {link['dest']}" for link in step["links"]]
+        lines += [f"  run        {cmd}" for cmd in step["run"]]
         if step["packages"]:
-            print(f"  uninstall  {' '.join(step['packages'])}")
+            pkgs = f"  {'install' if install else 'uninstall':<9}  {' '.join(step['packages'])}"
+            lines = [pkgs] + lines if install else lines + [pkgs]
+        print(f"{BLUE}{step['name']}{NC}")
+        print("\n".join(lines))
 
 
 def unlink(path):
@@ -153,22 +254,56 @@ def unlink(path):
         os.rmdir(path)  # directory symlinks on Windows
 
 
-def execute(plan):
+def execute_reset(plan):
     failed = []
     for step in plan:
         print(f"{YELLOW}→{NC} Resetting {step['name']}...")
         try:
-            for dest in step["links"]:
-                unlink(dest)
+            for link in step["links"]:
+                unlink(link["dest"])
             for cmd in step["run"]:
                 subprocess.run(cmd, shell=True, check=True)
             if step["packages"]:
-                subprocess.run(uninstall_cmd(step["packages"]), check=True)
+                uninstall_packages(step["packages"])
         except (OSError, subprocess.CalledProcessError) as e:
             print(f"{RED}✗{NC} {step['name']}: {e}")
             failed.append(step["name"])
         else:
             print(f"{GREEN}✓{NC} {step['name']}")
+    return failed
+
+
+def execute_install(plan, link_all):
+    """Install packages, then link (all of install.conf.yaml or just the plan's links), then run hooks."""
+    failed = []
+    for step in plan:
+        if step["packages"]:
+            print(f"{YELLOW}→{NC} Installing {step['name']}...")
+            try:
+                install_packages(step["packages"])
+            except (OSError, subprocess.CalledProcessError) as e:
+                print(f"{RED}✗{NC} {step['name']}: {e}")
+                failed.append(step["name"])
+
+    links = [l for step in plan if step["name"] not in failed for l in step["links"]]
+    if link_all or links:
+        print(f"{YELLOW}→{NC} Linking configs...")
+        try:
+            run_dotbot("install.conf.yaml") if link_all else link_only(links)
+        except (OSError, subprocess.CalledProcessError) as e:
+            print(f"{RED}✗{NC} links: {e}")
+            failed.append("links")
+
+    for step in plan:
+        if step["run"] and step["name"] not in failed:
+            print(f"{YELLOW}→{NC} Setting up {step['name']}...")
+            try:
+                for cmd in step["run"]:
+                    subprocess.run(cmd, shell=True, check=True)
+            except (OSError, subprocess.CalledProcessError) as e:
+                print(f"{RED}✗{NC} {step['name']}: {e}")
+                failed.append(step["name"])
+
     return failed
 
 
@@ -222,7 +357,7 @@ def fit(text, room):
     return text if len(text) <= room else text[:max(room - 1, 0)] + "…"
 
 
-def pick(plan):
+def pick(plan, title):
     """Checkbox menu over plan steps; returns the chosen steps, or None if cancelled."""
     selected = [False] * len(plan)
     cursor, top, drawn = 0, 0, 0
@@ -233,7 +368,7 @@ def pick(plan):
         nonlocal drawn
         cols = shutil.get_terminal_size().columns - 1  # writing the last column can wrap too
         lines = [
-            fit("Select tools to reset", cols),
+            fit(title, cols),
             DIM + fit("↑/↓ move · space toggle · a all · enter confirm · q quit", cols) + NC,
         ]
         for i in range(top, min(top + height, len(plan))):
@@ -275,21 +410,87 @@ def pick(plan):
 
 # --- commands ------------------------------------------------------------------------
 
+def choose(args, tools, build, title):
+    """Resolve the plan from TOOL args, --all, or the interactive picker. None means aborted."""
+    unknown = [t for t in args.tools if t not in tools]
+    if unknown:
+        sys.exit(f"error: unknown tool(s): {', '.join(unknown)} (see `dotfiles list`)")
+    if args.all and args.tools:
+        sys.exit("error: pass tools or --all, not both")
+
+    if args.all or args.tools:
+        return build(list(tools) if args.all else list(dict.fromkeys(args.tools)))
+
+    if not (sys.stdin.isatty() and sys.stdout.isatty()):
+        sys.exit("error: pass tools or --all (interactive picker needs a terminal)")
+    plan = build(list(tools))
+    if plan:
+        plan = pick(plan, title)
+        if plan is not None:
+            print()
+    return plan
+
+
+def proceed(args):
+    if args.dry_run:
+        return False
+    if not args.yes and not confirm("\nProceed? [y/N] "):
+        print("Aborted")
+        return False
+    print()
+    return True
+
+
+def report(failed, done):
+    if failed:
+        print(f"\n{RED}✗ Failed: {', '.join(failed)}{NC}")
+        return 1
+    print(f"\n{GREEN}✓ {done}{NC}")
+    return 0
+
+
 def cmd_install(args):
-    script = {
-        "macos": ["bash", "macos/install.sh"],
-        "linux": ["bash", "linux/install.sh"],
-        "windows": ["nu", "windows/install.nu"],
-    }[OS]
-    return subprocess.run(script + args.extra, cwd=REPO).returncode
+    tools = load_tools()
+    plan = choose(args, tools, lambda names: build_install_plan(names, tools), "Select tools to install")
+    if plan is None:
+        print("Aborted")
+        return 1
+    if not plan and not args.all:
+        print(f"{GREEN}✓{NC} Nothing to install")
+        return 0
+
+    print_plan(plan)
+    if args.all:
+        print(f"{BLUE}all configs{NC}\n  link       everything in install.conf.yaml")
+    if not proceed(args):
+        return 0 if args.dry_run else 1
+    return report(execute_install(plan, link_all=args.all), "Install complete")
+
+
+def cmd_reset(args):
+    tools = load_tools()
+    plan = choose(
+        args, tools, lambda names: build_reset_plan(names, tools, include_unclaimed=not args.tools), "Select tools to reset"
+    )
+    if plan is None:
+        print("Aborted")
+        return 1
+    if not plan:
+        print(f"{GREEN}✓{NC} Nothing to reset")
+        return 0
+
+    print_plan(plan)
+    if not proceed(args):
+        return 0 if args.dry_run else 1
+    return report(execute_reset(plan), "Reset complete")
 
 
 def cmd_link(args):
-    env = dict(os.environ)
-    if OS != "windows":
-        env["SHELL"] = "/bin/bash"
-    dotbot = [sys.executable, os.path.join("dotbot", "bin", "dotbot"), "-d", ".", "-c", "install.conf.yaml"]
-    return subprocess.run(dotbot, cwd=REPO, env=env).returncode
+    try:
+        run_dotbot("install.conf.yaml")
+    except subprocess.CalledProcessError as e:
+        return e.returncode
+    return 0
 
 
 def cmd_list(args):
@@ -299,56 +500,15 @@ def cmd_list(args):
     width = max(len(n) for n in tools)
     print(f"{DIM}{'TOOL':<{width}}  LINKED  PACKAGES{NC}")
     for name, tool in tools.items():
-        linked = sum(1 for d, s in links if under(s, tool.get("links", [])) and owned(d, s))
+        mine = unique([l for l in tool_links(tool, links) if applies(l)])
         pkgs = tool.get(OS, [])
-        if not linked and not pkgs:
+        if not mine and not pkgs:
             continue  # nothing for this OS
+        linked = f"{sum(1 for l in mine if owned(l))}/{len(mine)}" if mine else "-"
         shown = " ".join(
             f"{GREEN}{p}{NC}" if is_installed(p, installed) else f"{DIM}{p} (not installed){NC}" for p in pkgs
         )
-        print(f"{name:<{width}}  {str(linked) if linked else '-':<6}  {shown or '-'}")
-    return 0
-
-
-def cmd_reset(args):
-    tools = load_tools()
-    unknown = [t for t in args.tools if t not in tools]
-    if unknown:
-        sys.exit(f"error: unknown tool(s): {', '.join(unknown)} (see `dotfiles list`)")
-    if args.all and args.tools:
-        sys.exit("error: pass tools or --all, not both")
-
-    if args.all or args.tools:
-        names = list(tools) if args.all else list(dict.fromkeys(args.tools))
-        plan = build_plan(names, tools, include_unclaimed=args.all)
-    else:
-        if not (sys.stdin.isatty() and sys.stdout.isatty()):
-            sys.exit("error: pass tools or --all (interactive picker needs a terminal)")
-        plan = build_plan(list(tools), tools, include_unclaimed=True)
-        if plan:
-            plan = pick(plan)
-            if plan is None:
-                print("Aborted")
-                return 1
-            print()
-
-    if not plan:
-        print(f"{GREEN}✓{NC} Nothing to reset")
-        return 0
-
-    print_plan(plan)
-    if args.dry_run:
-        return 0
-    if not args.yes and not confirm("\nProceed? [y/N] "):
-        print("Aborted")
-        return 1
-
-    print()
-    failed = execute(plan)
-    if failed:
-        print(f"\n{RED}✗ Failed: {', '.join(failed)}{NC}")
-        return 1
-    print(f"\n{GREEN}✓ Reset complete{NC}")
+        print(f"{name:<{width}}  {linked:<6}  {shown or '-'}")
     return 0
 
 
@@ -356,22 +516,19 @@ def main():
     parser = argparse.ArgumentParser(prog="dotfiles", description="Install, link and reset this dotfiles repo.")
     sub = parser.add_subparsers(dest="command", metavar="COMMAND")
 
-    p = sub.add_parser("install", help="run this OS's install script")
-    p.add_argument("extra", nargs=argparse.REMAINDER, help=argparse.SUPPRESS)
-    p.set_defaults(func=cmd_install)
+    for name, func, help_text, all_help in [
+        ("install", cmd_install, "install packages and link configs", "install every tool and link all configs"),
+        ("reset", cmd_reset, "unlink configs and uninstall packages", "reset every tool and remove all dotfiles symlinks"),
+    ]:
+        p = sub.add_parser(name, help=help_text)
+        p.add_argument("tools", nargs="*", metavar="TOOL", help="tools to act on (default: pick interactively)")
+        p.add_argument("--all", action="store_true", help=all_help)
+        p.add_argument("-n", "--dry-run", action="store_true", help="show what would happen, change nothing")
+        p.add_argument("-y", "--yes", action="store_true", help="don't ask for confirmation")
+        p.set_defaults(func=func)
 
-    p = sub.add_parser("link", help="re-run dotbot to (re)create symlinks")
-    p.set_defaults(func=cmd_link)
-
-    p = sub.add_parser("list", help="show tools and what's linked/installed")
-    p.set_defaults(func=cmd_list)
-
-    p = sub.add_parser("reset", help="unlink configs and uninstall packages")
-    p.add_argument("tools", nargs="*", metavar="TOOL", help="tools to reset (default: pick interactively)")
-    p.add_argument("--all", action="store_true", help="reset every tool and remove all dotfiles symlinks")
-    p.add_argument("-n", "--dry-run", action="store_true", help="show what would be removed, change nothing")
-    p.add_argument("-y", "--yes", action="store_true", help="don't ask for confirmation")
-    p.set_defaults(func=cmd_reset)
+    sub.add_parser("link", help="re-run dotbot to (re)create all symlinks").set_defaults(func=cmd_link)
+    sub.add_parser("list", help="show tools and what's linked/installed").set_defaults(func=cmd_list)
 
     args = parser.parse_args()
     if OS is None:

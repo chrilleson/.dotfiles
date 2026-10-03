@@ -30,15 +30,13 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 ├── windows/             # Windows-specific configs
 │   ├── nushell/         # Nushell config
 │   ├── wezterm/         # WezTerm config
-│   ├── packages.json    # Scoop package list
 │   ├── install.nu       # Windows install script (Nushell)
-│   ├── install-packages.nu
 │   ├── install-node-packages.nu
 │   ├── setup-fnm.nu
 │   ├── validate-prerequisites.nu
 │   └── validate-prereqs.ps1
 ├── install.conf.yaml    # Dotbot symlink config
-└── reset.conf.yaml      # Tools `dotfiles reset` can remove
+└── tools.yaml           # Packages and setup per tool (used by the dotfiles CLI)
 ```
 
 ## Prerequisites
@@ -47,6 +45,7 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 
 1. **Git** - [git-scm.com](https://git-scm.com/)
 2. **Python 3** - [python.org](https://www.python.org/) or the Microsoft Store
+   - plus **PyYAML** (used by dotbot and the `dotfiles` command): `python -m pip install pyyaml`
 3. **Scoop** - Package manager
    ```powershell
    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
@@ -59,7 +58,7 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 ### Linux (Arch-based)
 
 1. **Git** - `sudo pacman -S git`
-2. **Python 3** - `sudo pacman -S python`
+2. **Python 3** - `sudo pacman -S python` (PyYAML is installed by the install script)
 3. **paru** - AUR helper
    ```bash
    git clone https://aur.archlinux.org/paru-bin.git
@@ -69,7 +68,7 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 ### macOS
 
 1. **Git** - included with Xcode Command Line Tools: `xcode-select --install`
-2. **Python 3** - included with Xcode Command Line Tools
+2. **Python 3** - included with Xcode Command Line Tools (PyYAML is installed by the install script)
 3. **Homebrew** - installed automatically by the install script if missing
 
 ## Installation
@@ -144,28 +143,45 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 
 ## The `dotfiles` command
 
-After installing, the `dotfiles` command is available on all platforms
-(linked to `~/.local/bin/dotfiles`; on Windows it's a Nushell command):
+### Getting the command
+
+- **New machine:** run your OS's install script (see [Installation](#installation)).
+  It links the command to `~/.local/bin/dotfiles`.
+- **Already installed, but no `dotfiles` command yet:** link it from the repo, then
+  open a new shell:
+  ```bash
+  ./shared/bin/dotfiles link        # Windows: python shared/bin/dotfiles link
+  ```
+- **Without linking:** run it straight from the repo, e.g. `./shared/bin/dotfiles list`
+  (on Windows: `python shared/bin/dotfiles list`).
+
+On macOS and Linux, `~/.local/bin` is added to your `PATH` by `shared/zsh/zshrc`.
+On Windows, `dotfiles` is a Nushell command defined in `windows/nushell/config.nu`
+that runs the script through Python.
+
+### Usage
 
 ```bash
-dotfiles install                # run this OS's install script
+dotfiles install                # pick tools to install interactively
+dotfiles install tmux vscode    # install specific tools (-n to preview)
+dotfiles install --all          # install everything and link all configs
 dotfiles link                   # re-run dotbot (symlinks only)
 dotfiles list                   # show tools and what's linked/installed
 dotfiles reset                  # pick tools to reset interactively
-dotfiles reset -n tmux vscode   # preview resetting tmux and VS Code
-dotfiles reset tmux vscode      # reset them (asks first)
-dotfiles reset --all [--yes]    # reset everything
+dotfiles reset tmux vscode      # reset specific tools (-n to preview)
+dotfiles reset --all            # reset everything
 ```
 
-Before the first install, run it from the repo: `./shared/bin/dotfiles install`.
+Without tool names, `install` and `reset` open a picker (↑/↓ move, space toggle,
+`a` all, enter confirm). Both show what they'll do and ask before changing anything
+(`-y` skips the question). Reset only removes symlinks pointing into this repo,
+never real files.
 
-`reset` removes the config symlinks and uninstalls the packages (brew, paru or Scoop).
-It shows what it will do and asks before changing anything. Only symlinks pointing into
-this repo are removed, never real files.
-
-Tools are defined in `reset.conf.yaml`. When you add a package to an install script,
-add it there too. Prerequisites (git, Python, zsh, Nushell, Homebrew, paru, Scoop) are
-never uninstalled.
+`tools.yaml` is the only package list: each tool has its brew/paru/Scoop packages,
+the configs it owns, and any setup commands to run after installing or before
+resetting. The install scripts handle prerequisites (Homebrew, PyYAML, zsh as the
+login shell) and then run `dotfiles install --all`. Prerequisites are never listed
+in `tools.yaml`, so reset can't remove them.
 
 ## What's Included
 
