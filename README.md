@@ -203,5 +203,5 @@ in `tools.yaml`, so reset can't remove them.
 ### Machine-specific Git Config
 `~/.gitconfig-local` holds your personal name, email, and editor. It is sourced by `shared/git/gitconfig` and is never committed to this repository. Copy `shared/git/gitconfig-local.example` as a starting point.
 
-### Backup Files
-Dotbot backs up existing config files before creating symlinks, saving them with a `.old` extension (e.g. `~/.gitconfig.old`).
+### Existing Config Files
+Dotbot never overwrites a real file: if one already exists where a symlink should go, it reports it and skips that link. Move the file aside (e.g. `mv ~/.gitconfig ~/.gitconfig.old`) and run `dotfiles link`.
