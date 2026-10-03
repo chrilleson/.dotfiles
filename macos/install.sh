@@ -20,6 +20,31 @@ echo -e "${BLUE}║              macOS                    ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════╝${NC}"
 echo ""
 
+# Next steps shown at the end; each is added only when it still applies
+NEXT_STEPS=()
+next_step() { NEXT_STEPS+=("$1"); }
+
+gitconfig_needs_editing() {
+    [ ! -f ~/.gitconfig-local ] || grep -qE 'Your Name|your\.email@example\.com' ~/.gitconfig-local
+}
+
+# Ghostty sets GHOSTTY_RESOURCES_DIR, which survives inside tmux (TERM_PROGRAM doesn't)
+in_ghostty() {
+    [ "${TERM_PROGRAM:-}" = "ghostty" ] || [ -n "${GHOSTTY_RESOURCES_DIR:-}" ]
+}
+
+print_next_steps() {
+    if [ ${#NEXT_STEPS[@]} -eq 0 ]; then
+        echo -e "${GREEN}Nothing left to do: you're all set.${NC}"
+        return
+    fi
+    echo -e "${BLUE}Next steps:${NC}"
+    local i
+    for i in "${!NEXT_STEPS[@]}"; do
+        echo "  $((i + 1)). ${NEXT_STEPS[$i]}"
+    done
+}
+
 check_prerequisites() {
     echo -e "${YELLOW}→${NC} Checking prerequisites..."
     local missing=()
@@ -84,6 +109,7 @@ setup_zsh_shell() {
     if [ "$current_shell" != "$ZSH_PATH" ]; then
         chsh -s "$ZSH_PATH"
         echo -e "${GREEN}✓${NC} Default shell set to Zsh (restart your terminal to apply)"
+        next_step "Restart your terminal (Zsh is now the default shell)"
     else
         echo -e "${GREEN}✓${NC} Zsh is already the default shell"
     fi
@@ -106,11 +132,12 @@ final_setup() {
     echo -e "${GREEN}║       Installation Complete!          ║${NC}"
     echo -e "${GREEN}╚════════════════════════════════════════╝${NC}"
     echo ""
-    echo -e "${BLUE}Next steps:${NC}"
-    echo "  1. Edit ~/.gitconfig-local with your name and email"
-    echo "  2. Restart your terminal (Zsh is the default shell)"
-    echo "  3. Launch Ghostty"
-    echo "  4. Open OrbStack once to finish Docker setup"
+    gitconfig_needs_editing && next_step "Edit ~/.gitconfig-local with your name and email"
+    in_ghostty || next_step "Launch Ghostty"
+    if command -v docker &> /dev/null && ! docker info &> /dev/null; then
+        next_step "Open OrbStack once to finish Docker setup"
+    fi
+    print_next_steps
     echo ""
     echo -e "${BLUE}Installed tools:${NC}"
     command -v git      &> /dev/null && echo "  ✓ git $(git --version | cut -d' ' -f3)"

@@ -38,11 +38,15 @@ function Invoke-Python {
 }
 
 # --- environment ---
+# Persistent user env changes only reach terminals started afterwards
+$EnvChanged = $false
+
 Step "Adding ~/.local/bin to your user PATH..."
 $LocalBin = Join-Path $HOME ".local\bin"
 $UserPath = [Environment]::GetEnvironmentVariable("Path", "User")
 if (($UserPath -split ";") -notcontains $LocalBin) {
     [Environment]::SetEnvironmentVariable("Path", "$LocalBin;$UserPath", "User")
+    $EnvChanged = $true
 }
 if (($env:Path -split ";") -notcontains $LocalBin) {
     $env:Path = "$LocalBin;$env:Path"
@@ -52,7 +56,10 @@ Ok "~/.local/bin is on PATH"
 # Neovim, lazygit and others read ~/.config when this is set (also when started outside a shell)
 Step "Setting XDG_CONFIG_HOME..."
 $ConfigHome = Join-Path $HOME ".config"
-[Environment]::SetEnvironmentVariable("XDG_CONFIG_HOME", $ConfigHome, "User")
+if ([Environment]::GetEnvironmentVariable("XDG_CONFIG_HOME", "User") -ne $ConfigHome) {
+    [Environment]::SetEnvironmentVariable("XDG_CONFIG_HOME", $ConfigHome, "User")
+    $EnvChanged = $true
+}
 $env:XDG_CONFIG_HOME = $ConfigHome
 Ok "XDG_CONFIG_HOME = $ConfigHome"
 
@@ -99,11 +106,27 @@ Write-Host "========================================" -ForegroundColor Green
 Write-Host "       Installation Complete!"             -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "Next steps:" -ForegroundColor Cyan
-if (-not (Test-Path (Join-Path $HOME ".gitconfig-local"))) {
-    Write-Host "  - Create ~/.gitconfig-local: cp shared/git/gitconfig-local.example ~/.gitconfig-local"
+# Each next step is shown only when it still applies
+$NextSteps = @()
+$GitconfigLocal = Join-Path $HOME ".gitconfig-local"
+if (-not (Test-Path $GitconfigLocal)) {
+    $NextSteps += "Create ~/.gitconfig-local from shared/git/gitconfig-local.example and add your name and email"
+} elseif (Select-String -Path $GitconfigLocal -Pattern 'Your Name|your\.email@example\.com' -Quiet) {
+    $NextSteps += "Edit ~/.gitconfig-local with your name and email"
 }
-Write-Host "  1. Edit ~/.gitconfig-local with your name and email"
-Write-Host "  2. Restart your terminal (picks up PATH and XDG_CONFIG_HOME)"
-Write-Host "  3. Launch WezTerm (starts PowerShell 7)"
+if ($EnvChanged) {
+    $NextSteps += "Restart your terminal (picks up PATH and XDG_CONFIG_HOME)"
+}
+if (-not $env:WEZTERM_EXECUTABLE) {
+    $NextSteps += "Launch WezTerm (starts PowerShell 7)"
+}
+
+if ($NextSteps.Count -eq 0) {
+    Write-Host "Nothing left to do: you're all set." -ForegroundColor Green
+} else {
+    Write-Host "Next steps:" -ForegroundColor Cyan
+    for ($i = 0; $i -lt $NextSteps.Count; $i++) {
+        Write-Host "  $($i + 1). $($NextSteps[$i])"
+    }
+}
 Write-Host ""
