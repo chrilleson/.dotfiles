@@ -20,6 +20,11 @@
       path: windows/nushell
       create: true
 
+    # dotfiles CLI (cross-platform; Windows runs it via the Nushell `dotfiles` command)
+    ~/.local/bin/dotfiles:
+      path: shared/bin/dotfiles
+      create: true
+
     # Git config (cross-platform)
     ~/.gitconfig:
       path: shared/git/gitconfig

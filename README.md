@@ -14,6 +14,7 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 │   ├── starship/        # starship.toml
 │   ├── node/            # npmrc, prettierrc, eslintrc
 │   ├── vscode/          # VS Code settings and keybindings
+│   ├── bin/             # dotfiles CLI
 │   └── nvim/            # LazyVim config
 ├── linux/               # Linux-specific configs
 │   ├── zsh/             # Zsh OS-specific config (os.zsh)
@@ -37,8 +38,7 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 │   ├── validate-prerequisites.nu
 │   └── validate-prereqs.ps1
 ├── install.conf.yaml    # Dotbot symlink config
-├── reset.py             # Reset/cleanup script (all platforms)
-└── reset.conf.yaml      # Tools reset.py can remove
+└── reset.conf.yaml      # Tools `dotfiles reset` can remove
 ```
 
 ## Prerequisites
@@ -142,21 +142,26 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
    npm install -g typescript ts-node pnpm eslint prettier @fsouza/prettierd neovim
    ```
 
-## Resetting
+## The `dotfiles` command
 
-`reset.py` removes the config symlinks and uninstalls the packages (brew, paru or scoop)
-for one or more tools, or for everything. It shows what it will do and asks before
-changing anything. Only symlinks pointing into this repo are removed, never real files.
+After installing, the `dotfiles` command is available on all platforms
+(linked to `~/.local/bin/dotfiles`; on Windows it's a Nushell command):
 
 ```bash
-./reset.py --list               # list tools
-./reset.py -n tmux vscode       # preview resetting tmux and VS Code
-./reset.py tmux vscode          # reset them (asks first)
-./reset.py --all                # reset everything
-./reset.py --all --yes          # reset everything without asking
+dotfiles install                # run this OS's install script
+dotfiles link                   # re-run dotbot (symlinks only)
+dotfiles list                   # show tools and what's linked/installed
+dotfiles reset                  # pick tools to reset interactively
+dotfiles reset -n tmux vscode   # preview resetting tmux and VS Code
+dotfiles reset tmux vscode      # reset them (asks first)
+dotfiles reset --all [--yes]    # reset everything
 ```
 
-On Windows, run it with `python reset.py ...`.
+Before the first install, run it from the repo: `./shared/bin/dotfiles install`.
+
+`reset` removes the config symlinks and uninstalls the packages (brew, paru or Scoop).
+It shows what it will do and asks before changing anything. Only symlinks pointing into
+this repo are removed, never real files.
 
 Tools are defined in `reset.conf.yaml`. When you add a package to an install script,
 add it there too. Prerequisites (git, Python, zsh, Nushell, Homebrew, paru, Scoop) are

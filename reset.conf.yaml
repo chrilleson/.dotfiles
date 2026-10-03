@@ -1,4 +1,4 @@
-# Tools that reset.py can remove.
+# Tools that `dotfiles reset` can remove.
 #
 # Each tool lists:
 #   links:                 repo paths whose symlinks (from install.conf.yaml) get removed
@@ -7,6 +7,9 @@
 #
 # Keep this in sync with the package lists in the install scripts.
 # Prerequisites (git, python, zsh, nushell, scoop, brew, paru) are never uninstalled.
+
+dotfiles:
+  links: [shared/bin]
 
 zsh:
   links: [shared/zsh, linux/zsh, macos/zsh]

@@ -16,7 +16,7 @@ This directory contains Linux-specific configuration.
 
 Packages are installed by `install.sh` via `paru`; its inline `paru -S` list
 is the single source of truth. Add or remove packages by editing that list, and
-update `reset.conf.yaml` so `reset.py` can uninstall them.
+update `reset.conf.yaml` so `dotfiles reset` can uninstall them.
 
 ## Supported Distributions
 

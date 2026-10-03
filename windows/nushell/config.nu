@@ -48,3 +48,8 @@ $env.PATH = (
     | append ($env.HOME + "/.local/bin")
     | uniq
 )
+
+# dotfiles CLI (Windows can't run the Python script directly)
+def --wrapped dotfiles [...args] {
+    python ($nu.home-path | path join ".local/bin/dotfiles") ...$args
+}
