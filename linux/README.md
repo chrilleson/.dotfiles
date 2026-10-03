@@ -15,7 +15,8 @@ This directory contains Linux-specific configuration.
 ## Package Management
 
 Packages are installed by `install.sh` via `paru`; its inline `paru -S` list
-is the single source of truth. Add or remove packages by editing that list.
+is the single source of truth. Add or remove packages by editing that list, and
+update `reset.conf.yaml` so `reset.py` can uninstall them.
 
 ## Supported Distributions
 

@@ -1,0 +1,124 @@
+# Tools that reset.py can remove.
+#
+# Each tool lists:
+#   links:                 repo paths whose symlinks (from install.conf.yaml) get removed
+#   macos/linux/windows:   packages to uninstall (brew / paru / scoop)
+#   run:                   per-OS shell commands to run before uninstalling
+#
+# Keep this in sync with the package lists in the install scripts.
+# Prerequisites (git, python, zsh, nushell, scoop, brew, paru) are never uninstalled.
+
+zsh:
+  links: [shared/zsh, linux/zsh, macos/zsh]
+  macos: [zsh-autosuggestions, zsh-syntax-highlighting, zsh-completions]
+  linux: [zsh-autosuggestions, zsh-syntax-highlighting, zsh-completions]
+
+nushell:
+  links: [windows/nushell]
+
+git:
+  links: [shared/git]
+
+delta:
+  macos: [git-delta]
+  linux: [git-delta]
+  windows: [delta]
+
+starship:
+  links: [shared/starship]
+  macos: [starship]
+  linux: [starship]
+  windows: [starship]
+
+tmux:
+  links: [linux/tmux, linux/bin/tmux-dev, macos/tmux]
+  macos: [tmux]
+  linux: [tmux]
+
+ghostty:
+  links: [linux/ghostty, macos/ghostty]
+  macos: [ghostty]
+  linux: [ghostty]
+
+wezterm:
+  links: [windows/wezterm]
+  windows: [wezterm]
+
+neovim:
+  links: [shared/nvim]
+  macos: [neovim]
+  linux: [neovim]
+  windows: [neovim]
+
+vscode:
+  links: [shared/vscode]
+  macos: [visual-studio-code]
+  linux: [visual-studio-code-bin]
+  windows: [vscode]
+
+node:
+  links: [shared/node]
+  macos: [fnm]
+  linux: [fnm-bin]
+  windows: [fnm]
+
+docker:
+  macos: [orbstack]
+  linux: [docker, docker-compose, docker-buildx]
+  run:
+    linux: [sudo systemctl disable --now docker.service docker.socket]
+
+dotnet:
+  linux: [dotnet-sdk]
+
+fonts:
+  macos: [font-jetbrains-mono-nerd-font]
+  windows: [JetBrainsMono-NF]
+  run:
+    linux: [rm -rf ~/.local/share/fonts/JetBrainsMono && fc-cache -f]
+
+fzf:
+  macos: [fzf]
+  linux: [fzf]
+  windows: [fzf]
+
+zoxide:
+  macos: [zoxide]
+  linux: [zoxide]
+  windows: [zoxide]
+
+bat:
+  macos: [bat]
+  linux: [bat]
+  windows: [bat]
+
+ripgrep:
+  macos: [ripgrep]
+  linux: [ripgrep]
+  windows: [ripgrep]
+
+fd:
+  macos: [fd]
+  linux: [fd]
+  windows: [fd]
+
+jq:
+  macos: [jq]
+  linux: [jq]
+  windows: [jq]
+
+eza:
+  macos: [eza]
+  linux: [eza]
+
+lazygit:
+  macos: [lazygit]
+  linux: [lazygit]
+  windows: [lazygit]
+
+gh:
+  macos: [gh]
+  linux: [github-cli]
+
+7zip:
+  windows: [7zip]

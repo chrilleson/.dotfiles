@@ -36,7 +36,9 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 │   ├── setup-fnm.nu
 │   ├── validate-prerequisites.nu
 │   └── validate-prereqs.ps1
-└── install.conf.yaml    # Dotbot symlink config
+├── install.conf.yaml    # Dotbot symlink config
+├── reset.py             # Reset/cleanup script (all platforms)
+└── reset.conf.yaml      # Tools reset.py can remove
 ```
 
 ## Prerequisites
@@ -139,6 +141,26 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
    fnm install --lts && fnm default lts-latest
    npm install -g typescript ts-node pnpm eslint prettier @fsouza/prettierd neovim
    ```
+
+## Resetting
+
+`reset.py` removes the config symlinks and uninstalls the packages (brew, paru or scoop)
+for one or more tools, or for everything. It shows what it will do and asks before
+changing anything. Only symlinks pointing into this repo are removed, never real files.
+
+```bash
+./reset.py --list               # list tools
+./reset.py -n tmux vscode       # preview resetting tmux and VS Code
+./reset.py tmux vscode          # reset them (asks first)
+./reset.py --all                # reset everything
+./reset.py --all --yes          # reset everything without asking
+```
+
+On Windows, run it with `python reset.py ...`.
+
+Tools are defined in `reset.conf.yaml`. When you add a package to an install script,
+add it there too. Prerequisites (git, Python, zsh, Nushell, Homebrew, paru, Scoop) are
+never uninstalled.
 
 ## What's Included
 
