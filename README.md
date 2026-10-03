@@ -33,9 +33,34 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 │   ├── bin/             # dotfiles.cmd wrapper for the dotfiles CLI
 │   ├── install.ps1      # Windows install script
 │   └── validate-prereqs.ps1
+├── bootstrap.sh         # One-command setup for macOS/Linux (curl | bash)
+├── bootstrap.ps1        # One-command setup for Windows (irm | iex)
 ├── install.conf.yaml    # Dotbot symlink config
 └── tools.yaml           # Packages and setup per tool (used by the dotfiles CLI)
 ```
+
+## Quick Start
+
+On a new machine, one command checks the prerequisites (offering to install missing
+ones), clones this repo to `~/dev/repositories/personal/.dotfiles` (asking before
+creating `~/dev/repositories/personal` if it doesn't exist) and runs the install script
+for your OS:
+
+```bash
+# macOS / Arch-based Linux
+curl -fsSL https://raw.githubusercontent.com/chrilleson/.dotfiles/main/bootstrap.sh | bash
+```
+
+```powershell
+# Windows (built-in PowerShell)
+irm https://raw.githubusercontent.com/chrilleson/.dotfiles/main/bootstrap.ps1 | iex
+```
+
+Set `DOTFILES_DIR` to clone somewhere else, or `DOTFILES_SKIP_INSTALL=1` to only check
+prerequisites and clone. Running it again updates the clone and re-runs the installer.
+The clone uses HTTPS; switch to SSH to push (`git remote set-url origin git@github.com:chrilleson/.dotfiles.git`).
+
+The sections below describe the manual route.
 
 ## Prerequisites
 
