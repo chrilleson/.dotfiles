@@ -5,6 +5,8 @@
   dotfiles install TOOL...      install specific tools (-n preview, -y no prompt)
   dotfiles install --all        install everything and link all configs
   dotfiles link                 re-run dotbot (symlinks only)
+  dotfiles dotbot               check for a newer Dotbot release
+  dotfiles dotbot --update      replace the vendored dotbot/ with the newest release
   dotfiles list                 show tools and what's linked/installed
   dotfiles reset                pick tools to reset interactively
   dotfiles reset TOOL...        reset specific tools (-n preview, -y no prompt)
@@ -21,10 +23,13 @@ On Windows, ~/.local/bin/dotfiles.cmd runs this through Python.
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
+import urllib.request
 
 try:
     import yaml
@@ -572,6 +577,97 @@ def cmd_upgrade(args):
     return report(execute_upgrade(plan), "Upgrade complete")
 
 
+# --- vendored dotbot ----------------------------------------------------------------
+
+DOTBOT_REPO = "anishathalye/dotbot"
+
+
+def version_key(version):
+    return tuple(int(n) for n in version.split("."))
+
+
+def vendored_dotbot_version():
+    with open(os.path.join(REPO, "dotbot", "src", "dotbot", "__about__.py")) as f:
+        return re.search(r'__version__ = "([^"]+)"', f.read()).group(1)
+
+
+def latest_dotbot_version():
+    """Newest vX.Y.Z tag; tags are more complete than GitHub releases for dotbot."""
+    url = f"https://api.github.com/repos/{DOTBOT_REPO}/tags?per_page=100"
+    with urllib.request.urlopen(url, timeout=15) as resp:
+        tags = [t["name"][1:] for t in json.load(resp) if re.fullmatch(r"v\d+\.\d+\.\d+", t["name"])]
+    return max(tags, key=version_key)
+
+
+def replace_dotbot(version):
+    """Swap dotbot/ for the release tarball's contents, restoring the old copy on failure."""
+    url = f"https://github.com/{DOTBOT_REPO}/archive/refs/tags/v{version}.tar.gz"
+    target = os.path.join(REPO, "dotbot")
+    with tempfile.TemporaryDirectory() as tmp:
+        archive = os.path.join(tmp, "dotbot.tar.gz")
+        with urllib.request.urlopen(url, timeout=60) as resp, open(archive, "wb") as f:
+            shutil.copyfileobj(resp, f)
+
+        with tarfile.open(archive) as tar:
+            for member in tar.getmembers():  # no absolute paths or ../ escapes
+                path = os.path.normpath(member.name)
+                if path.startswith(("/", "..")) or os.path.isabs(path):
+                    raise RuntimeError(f"unsafe path in archive: {member.name}")
+            tar.extractall(tmp)
+        extracted = os.path.join(tmp, f"dotbot-{version}")
+        if not os.path.isfile(os.path.join(extracted, "bin", "dotbot")):
+            raise RuntimeError("archive doesn't look like dotbot (no bin/dotbot)")
+
+        backup = os.path.join(tmp, "old-dotbot")
+        shutil.move(target, backup)
+        try:
+            shutil.move(extracted, target)
+        except Exception:
+            if os.path.exists(target):
+                shutil.rmtree(target)
+            shutil.move(backup, target)
+            raise
+
+
+def cmd_dotbot(args):
+    current = vendored_dotbot_version()
+    try:
+        latest = latest_dotbot_version()
+    except (OSError, ValueError) as e:
+        sys.exit(f"error: couldn't check GitHub for dotbot releases: {e}")
+
+    if version_key(latest) <= version_key(current):
+        print(f"{GREEN}✓{NC} Dotbot {current} is up to date")
+        return 0
+
+    print(f"Dotbot {BLUE}{current}{NC} → {GREEN}{latest}{NC} available")
+    print(f"  changes: https://github.com/{DOTBOT_REPO}/compare/v{current}...v{latest}")
+    if not args.update:
+        print("Run `dotfiles dotbot --update` to update the vendored copy.")
+        return 0
+
+    dirty = subprocess.run(
+        ["git", "status", "--porcelain", "--", "dotbot"], cwd=REPO, capture_output=True, text=True
+    ).stdout.strip()
+    if dirty:
+        sys.exit("error: dotbot/ has uncommitted changes; commit or discard them first")
+    if not args.yes and not confirm(f"\nReplace dotbot/ with {latest}? [y/N] "):
+        print("Aborted")
+        return 1
+
+    print(f"{YELLOW}→{NC} Downloading dotbot {latest}...")
+    try:
+        replace_dotbot(latest)
+    except (OSError, RuntimeError, tarfile.TarError) as e:
+        print(f"{RED}✗{NC} Update failed, dotbot/ left unchanged: {e}")
+        return 1
+
+    print(f"{GREEN}✓{NC} Dotbot updated to {vendored_dotbot_version()}\n")
+    subprocess.run(["git", "status", "--short", "--", "dotbot"], cwd=REPO)
+    print(f"\nReview, then commit: git add dotbot && git commit -m \"chore: update dotbot to {latest}\"")
+    return 0
+
+
 def cmd_link(args):
     try:
         run_dotbot("install.conf.yaml")
@@ -616,6 +712,11 @@ def main():
         p.set_defaults(func=func)
 
     sub.add_parser("link", help="re-run dotbot to (re)create all symlinks").set_defaults(func=cmd_link)
+
+    p = sub.add_parser("dotbot", help="check for (or install) a newer vendored Dotbot")
+    p.add_argument("--update", action="store_true", help="replace dotbot/ with the newest release")
+    p.add_argument("-y", "--yes", action="store_true", help="don't ask for confirmation")
+    p.set_defaults(func=cmd_dotbot)
     sub.add_parser("list", help="show tools and what's linked/installed").set_defaults(func=cmd_list)
 
     args = parser.parse_args()
