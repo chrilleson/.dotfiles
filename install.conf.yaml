@@ -13,6 +13,10 @@
     stderr: true
     quiet: true
 
+# Windows-only links use `if: 'cmd /c exit 0'`: dotbot runs conditions with cmd.exe
+# on Windows (so `uname` checks never pass there), and `cmd` doesn't exist on
+# macOS/Linux, so the check is only true on Windows.
+
 # Symlink configurations
 - link:
     # Nushell config (cross-platform)
@@ -34,17 +38,19 @@
     # Starship (cross-platform prompt)
     ~/.config/starship.toml:
       path: shared/starship/starship.toml
-      if: '[ -d ~/.config ] || [ "$(uname)" = "Windows_NT" ]'
+      create: true
 
     # Neovim (cross-platform)
     ~/.config/nvim:
       path: shared/nvim
       create: true
 
-    # WezTerm (Windows only — Linux uses Ghostty, macOS uses Ghostty or native)
-    ~/.wezterm.lua:
-      path: windows/wezterm/wezterm.lua
-      if: '[ "$(uname)" = "Windows_NT" ]'
+    # WezTerm (Windows only; Linux and macOS use Ghostty). Linked as a directory
+    # so wezterm.lua can require its modules from the same folder.
+    ~/.config/wezterm:
+      path: windows/wezterm
+      if: 'cmd /c exit 0'
+      create: true
 
     # VS Code (cross-platform, each OS has its own user dir)
     ~/.config/Code/User/settings.json:
@@ -65,11 +71,11 @@
       create: true
     ~/AppData/Roaming/Code/User/settings.json:
       path: shared/vscode/settings.json
-      if: '[ "$(uname)" = "Windows_NT" ]'
+      if: 'cmd /c exit 0'
       create: true
     ~/AppData/Roaming/Code/User/keybindings.json:
       path: shared/vscode/keybindings.json
-      if: '[ "$(uname)" = "Windows_NT" ]'
+      if: 'cmd /c exit 0'
       create: true
 
     # Node configs (cross-platform)
