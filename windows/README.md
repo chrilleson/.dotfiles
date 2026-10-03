@@ -54,7 +54,7 @@ your-tool:
 ```
 
 Then install it with `dotfiles install your-tool`. Use `dotfiles list` to see what's
-installed and `dotfiles reset your-tool` to remove it.
+installed, `dotfiles upgrade` to update, and `dotfiles reset your-tool` to remove it.
 
 ## The `dotfiles` command
 

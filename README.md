@@ -170,12 +170,18 @@ dotfiles list                   # show tools and what's linked/installed
 dotfiles reset                  # pick tools to reset interactively
 dotfiles reset tmux vscode      # reset specific tools (-n to preview)
 dotfiles reset --all            # reset everything
+dotfiles upgrade                # pick outdated tools to upgrade interactively
+dotfiles upgrade --all          # upgrade everything
 ```
 
-Without tool names, `install` and `reset` open a picker (↑/↓ move, space toggle,
-`a` all, enter confirm). Both show what they'll do and ask before changing anything
-(`-y` skips the question). Reset only removes symlinks pointing into this repo,
+Without tool names, `install`, `reset` and `upgrade` open a picker (↑/↓ move, space
+toggle, `a` all, enter confirm). They show what they'll do and ask before changing
+anything (`-y` skips the question). Reset only removes symlinks pointing into this repo,
 never real files.
+
+`upgrade` runs `brew update` and offers only tools with updates on macOS, and
+`scoop update` on Windows. On Arch it always runs `paru -Syu`, since Arch doesn't
+support upgrading single packages.
 
 `tools.yaml` is the only package list: each tool has its brew/paru/Scoop packages,
 the configs it owns, and any setup commands to run after installing or before

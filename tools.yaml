@@ -7,6 +7,7 @@
 #   macos/linux/windows:   packages (brew / paru / scoop; scoop takes bucket/app)
 #   install:               per-OS shell commands run after installing packages and linking
 #   reset:                 per-OS shell commands run before uninstalling
+#   upgrade:               per-OS shell commands run by `dotfiles upgrade` (for tools without a package)
 #
 # Install commands run on every install, so keep them idempotent.
 # Prerequisites (git, python, zsh, brew, paru, scoop) are set up by the
@@ -157,6 +158,9 @@ pass-cli:
         $script = Join-Path $env:TEMP 'pass-cli-install.ps1';
         Invoke-WebRequest -Uri https://proton.me/download/pass-cli/install.ps1 -OutFile $script;
         & $script"
+  upgrade:
+    windows:
+      - if exist "%USERPROFILE%\.local\bin\pass-cli.exe" pass-cli update
   reset:
     windows:
       - if exist "%USERPROFILE%\.local\bin\pass-cli.exe" del "%USERPROFILE%\.local\bin\pass-cli.exe"

@@ -9,6 +9,9 @@
   dotfiles reset                pick tools to reset interactively
   dotfiles reset TOOL...        reset specific tools (-n preview, -y no prompt)
   dotfiles reset --all          reset everything
+  dotfiles upgrade              pick outdated tools to upgrade interactively
+  dotfiles upgrade TOOL...      upgrade specific tools (-n preview, -y no prompt)
+  dotfiles upgrade --all        upgrade everything (on Arch: always the whole system)
 
 Tools are defined in tools.yaml; symlinks come from install.conf.yaml.
 Reset only removes symlinks that point into this repo, never real files.
@@ -158,6 +161,25 @@ def uninstall_packages(pkgs):
         subprocess.run([scoop(), "uninstall"] + names, check=True)
 
 
+def outdated_packages():
+    """Names of outdated packages, or None when the package manager can't tell cheaply (Scoop)."""
+    if OS == "macos":
+        print(f"{YELLOW}→{NC} Checking for updates (brew update)...")
+        subprocess.run(["brew", "update", "--quiet"], stdout=subprocess.DEVNULL)
+        out = subprocess.run(["brew", "outdated", "--json=v2"], capture_output=True, text=True, check=True).stdout
+        data = json.loads(out)
+        return {f["name"] for f in data["formulae"]} | {c["name"] for c in data["casks"]}
+    return None
+
+
+def upgrade_packages(pkgs):
+    names = [pkg_name(p) for p in pkgs]
+    if OS == "macos":
+        subprocess.run(["brew", "upgrade"] + names, check=True)
+    else:
+        subprocess.run([scoop(), "update"] + names, check=True)
+
+
 def run_dotbot(config):
     env = dict(os.environ)
     if OS != "windows":
@@ -181,7 +203,7 @@ def link_only(links):
 # --- plans -------------------------------------------------------------------------
 #
 # A plan is a list of steps, one per tool:
-#   {"name", "action": "install"|"reset", "packages": [...], "links": [link...], "run": [cmd...]}
+#   {"name", "action": "install"|"reset"|"upgrade", "packages": [...], "links": [link...], "run": [cmd...]}
 
 def build_reset_plan(names, tools, include_unclaimed=False):
     links = install_links()
@@ -222,13 +244,36 @@ def build_install_plan(names, tools):
     return [step for step in plan if step["links"] or step["run"] or step["packages"]]
 
 
+def build_upgrade_plan(names, tools):
+    """Installed packages with updates (all installed ones when that can't be checked), plus upgrade hooks."""
+    installed = installed_packages()
+    outdated = outdated_packages()
+    plan = []
+    for name in names:
+        tool = tools[name]
+        plan.append({
+            "name": name,
+            "action": "upgrade",
+            "links": [],
+            "run": (tool.get("upgrade") or {}).get(OS, []),
+            "packages": [
+                p for p in tool.get(OS, [])
+                if is_installed(p, installed) and (outdated is None or pkg_name(p) in outdated)
+            ],
+        })
+    return [step for step in plan if step["run"] or step["packages"]]
+
+
+PACKAGE_VERB = {"install": "install", "reset": "uninstall", "upgrade": "upgrade"}
+LINK_VERB = {"install": "link", "reset": "unlink", "upgrade": "link"}
+
+
 def summary(step):
-    install = step["action"] == "install"
     parts = []
     if step["packages"]:
-        parts.append(("install " if install else "uninstall ") + " ".join(step["packages"]))
+        parts.append(PACKAGE_VERB[step["action"]] + " " + " ".join(step["packages"]))
     if step["links"]:
-        parts.append(f"{'link' if install else 'unlink'} {len(step['links'])}")
+        parts.append(f"{LINK_VERB[step['action']]} {len(step['links'])}")
     if step["run"]:
         parts.append(f"run {len(step['run'])}")
     return " · ".join(parts)
@@ -236,13 +281,13 @@ def summary(step):
 
 def print_plan(plan):
     for step in plan:
-        install = step["action"] == "install"
-        # same order the steps run in
-        lines = [f"  {'link' if install else 'unlink':<9}  {link['dest']}" for link in step["links"]]
+        action = step["action"]
+        # same order the steps run in: reset removes packages last, the others install them first
+        lines = [f"  {LINK_VERB[action]:<9}  {link['dest']}" for link in step["links"]]
         lines += [f"  run        {cmd}" for cmd in step["run"]]
         if step["packages"]:
-            pkgs = f"  {'install' if install else 'uninstall':<9}  {' '.join(step['packages'])}"
-            lines = [pkgs] + lines if install else lines + [pkgs]
+            pkgs = f"  {PACKAGE_VERB[action]:<9}  {' '.join(step['packages'])}"
+            lines = lines + [pkgs] if action == "reset" else [pkgs] + lines
         print(f"{BLUE}{step['name']}{NC}")
         print("\n".join(lines))
 
@@ -304,6 +349,23 @@ def execute_install(plan, link_all):
                 print(f"{RED}✗{NC} {step['name']}: {e}")
                 failed.append(step["name"])
 
+    return failed
+
+
+def execute_upgrade(plan):
+    failed = []
+    for step in plan:
+        print(f"{YELLOW}→{NC} Upgrading {step['name']}...")
+        try:
+            if step["packages"]:
+                upgrade_packages(step["packages"])
+            for cmd in step["run"]:
+                subprocess.run(cmd, shell=True, check=True)
+        except (OSError, subprocess.CalledProcessError) as e:
+            print(f"{RED}✗{NC} {step['name']}: {e}")
+            failed.append(step["name"])
+        else:
+            print(f"{GREEN}✓{NC} {step['name']}")
     return failed
 
 
@@ -485,6 +547,31 @@ def cmd_reset(args):
     return report(execute_reset(plan), "Reset complete")
 
 
+def cmd_upgrade(args):
+    if OS == "linux":
+        # Arch doesn't support partial upgrades: upgrading single packages against
+        # a stale system can break it, so always upgrade everything.
+        print("Arch doesn't support partial upgrades, so this upgrades the whole system:")
+        print(f"{BLUE}system{NC}\n  run        paru -Syu")
+        if not proceed(args):
+            return 0 if args.dry_run else 1
+        return report([] if subprocess.run(["paru", "-Syu"]).returncode == 0 else ["system"], "Upgrade complete")
+
+    tools = load_tools()
+    plan = choose(args, tools, lambda names: build_upgrade_plan(names, tools), "Select tools to upgrade")
+    if plan is None:
+        print("Aborted")
+        return 1
+    if not plan:
+        print(f"{GREEN}✓{NC} Everything is up to date")
+        return 0
+
+    print_plan(plan)
+    if not proceed(args):
+        return 0 if args.dry_run else 1
+    return report(execute_upgrade(plan), "Upgrade complete")
+
+
 def cmd_link(args):
     try:
         run_dotbot("install.conf.yaml")
@@ -519,6 +606,7 @@ def main():
     for name, func, help_text, all_help in [
         ("install", cmd_install, "install packages and link configs", "install every tool and link all configs"),
         ("reset", cmd_reset, "unlink configs and uninstall packages", "reset every tool and remove all dotfiles symlinks"),
+        ("upgrade", cmd_upgrade, "upgrade installed packages", "upgrade every tool (on Arch: always the whole system)"),
     ]:
         p = sub.add_parser(name, help=help_text)
         p.add_argument("tools", nargs="*", metavar="TOOL", help="tools to act on (default: pick interactively)")
