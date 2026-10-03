@@ -19,7 +19,8 @@
   ],
   "extras": [
     "wezterm",
-    "lazygit"
+    "lazygit",
+    "vscode"
   ],
   "nerd-fonts": [
     "JetBrainsMono-NF"

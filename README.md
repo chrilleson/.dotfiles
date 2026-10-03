@@ -13,6 +13,7 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 │   ├── git/             # gitconfig, gitignore, gitconfig-local.example
 │   ├── starship/        # starship.toml
 │   ├── node/            # npmrc, prettierrc, eslintrc
+│   ├── vscode/          # VS Code settings and keybindings
 │   └── nvim/            # LazyVim config
 ├── linux/               # Linux-specific configs
 │   ├── zsh/             # Zsh OS-specific config (os.zsh)
@@ -27,7 +28,6 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 │   └── install.sh       # macOS install script
 ├── windows/             # Windows-specific configs
 │   ├── nushell/         # Nushell config
-│   ├── vscode/          # VS Code settings and keybindings
 │   ├── wezterm/         # WezTerm config
 │   ├── packages.json    # Scoop package list
 │   ├── install.nu       # Windows install script (Nushell)
@@ -148,7 +148,7 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 | **Starship** | ✓ | ✓ | ✓ |
 | **Neovim** (LazyVim) | ✓ | ✓ | ✓ |
 | **Node.js** (fnm, eslint, prettier) | ✓ | ✓ | ✓ |
-| **VS Code** | ✓ | ✓ | |
+| **VS Code** | ✓ | ✓ | ✓ |
 | **Nushell** | ✓ | | |
 | **WezTerm** | ✓ | | |
 | **Zsh** | | ✓ | ✓ |

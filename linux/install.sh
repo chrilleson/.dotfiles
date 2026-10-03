@@ -46,7 +46,7 @@ install_packages() {
     paru -S --needed \
         zsh zsh-autosuggestions zsh-syntax-highlighting zsh-completions starship ghostty tmux \
         git-delta fzf zoxide bat ripgrep fd jq eza \
-        neovim lazygit github-cli \
+        neovim lazygit github-cli visual-studio-code-bin \
         fnm-bin dotnet-sdk \
         docker docker-compose docker-buildx
     echo -e "${GREEN}✓${NC} Packages installed"

@@ -66,7 +66,7 @@ install_packages() {
         neovim lazygit gh fnm \
         zsh-autosuggestions zsh-syntax-highlighting zsh-completions
 
-    brew install --cask ghostty font-jetbrains-mono-nerd-font orbstack
+    brew install --cask ghostty font-jetbrains-mono-nerd-font orbstack visual-studio-code
 
     echo -e "${GREEN}✓${NC} Packages installed"
 }

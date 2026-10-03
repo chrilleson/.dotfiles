@@ -98,6 +98,7 @@ The `validate-prereqs.ps1` script automatically checks for symlink permissions a
 
 - **wezterm** - GPU-accelerated terminal emulator
 - **lazygit** - Terminal UI for git
+- **vscode** - Visual Studio Code
 
 ### Fonts (nerd-fonts bucket)
 
@@ -127,7 +128,7 @@ Configuration: `powershell/Microsoft.PowerShell_profile.ps1`
 
 ### VS Code
 
-VS Code settings are symlinked to `%APPDATA%\Code\User\` on Windows.
+VS Code settings live in `shared/vscode/` and are symlinked to `%APPDATA%\Code\User\` on Windows.
 
 ## Troubleshooting
 
