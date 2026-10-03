@@ -28,12 +28,10 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 │   ├── tmux/            # Tmux config
 │   └── install.sh       # macOS install script
 ├── windows/             # Windows-specific configs
-│   ├── nushell/         # Nushell config
+│   ├── powershell/      # PowerShell 7 profile
 │   ├── wezterm/         # WezTerm config
-│   ├── install.nu       # Windows install script (Nushell)
-│   ├── install-node-packages.nu
-│   ├── setup-fnm.nu
-│   ├── validate-prerequisites.nu
+│   ├── bin/             # dotfiles.cmd wrapper for the dotfiles CLI
+│   ├── install.ps1      # Windows install script
 │   └── validate-prereqs.ps1
 ├── install.conf.yaml    # Dotbot symlink config
 └── tools.yaml           # Packages and setup per tool (used by the dotfiles CLI)
@@ -44,15 +42,14 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 ### Windows
 
 1. **Git** - [git-scm.com](https://git-scm.com/)
-2. **Python 3** - [python.org](https://www.python.org/) or the Microsoft Store
-   - plus **PyYAML** (used by dotbot and the `dotfiles` command): `python -m pip install pyyaml`
+2. **Python 3** - [python.org](https://www.python.org/) (includes the `py` launcher)
+   - plus **PyYAML** (used by dotbot and the `dotfiles` command): `py -3 -m pip install pyyaml`
 3. **Scoop** - Package manager
    ```powershell
    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
    Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
    ```
-4. **Nushell** - `scoop install nu`
-5. **Developer Mode** (Recommended) - Allows creating symlinks without admin privileges
+4. **Developer Mode** (Recommended) - Allows creating symlinks without admin privileges
    - Settings → Privacy & Security → For developers → Developer Mode
 
 ### Linux (Arch-based)
@@ -87,10 +84,12 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
    notepad ~/.gitconfig-local
    ```
 
-3. Run the installer:
-   ```nu
-   nu windows/install.nu
+3. Run the installer (works in the built-in Windows PowerShell; installs PowerShell 7):
+   ```powershell
+   .\windows\install.ps1
    ```
+
+4. Restart your terminal, or launch WezTerm, which starts PowerShell 7.
 
 ### Linux (Arch-based)
 
@@ -150,14 +149,15 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 - **Already installed, but no `dotfiles` command yet:** link it from the repo, then
   open a new shell:
   ```bash
-  ./shared/bin/dotfiles link        # Windows: python shared/bin/dotfiles link
+  ./shared/bin/dotfiles link        # Windows: py -3 shared\bin\dotfiles link
   ```
 - **Without linking:** run it straight from the repo, e.g. `./shared/bin/dotfiles list`
-  (on Windows: `python shared/bin/dotfiles list`).
+  (on Windows: `py -3 shared\bin\dotfiles list`).
 
 On macOS and Linux, `~/.local/bin` is added to your `PATH` by `shared/zsh/zshrc`.
-On Windows, `dotfiles` is a Nushell command defined in `windows/nushell/config.nu`
-that runs the script through Python.
+On Windows, `windows/bin/dotfiles.cmd` is linked next to it and runs the script through
+Python, and `install.ps1` adds `~/.local/bin` to your user `PATH`, so `dotfiles` works in
+PowerShell, cmd and WezTerm.
 
 ### Usage
 
@@ -192,7 +192,7 @@ in `tools.yaml`, so reset can't remove them.
 | **Neovim** (LazyVim) | ✓ | ✓ | ✓ |
 | **Node.js** (fnm, eslint, prettier) | ✓ | ✓ | ✓ |
 | **VS Code** | ✓ | ✓ | ✓ |
-| **Nushell** | ✓ | | |
+| **PowerShell 7** | ✓ | | |
 | **WezTerm** | ✓ | | |
 | **Zsh** | | ✓ | ✓ |
 | **Ghostty** | | ✓ | ✓ |

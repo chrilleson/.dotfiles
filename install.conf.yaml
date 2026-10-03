@@ -19,14 +19,19 @@
 
 # Symlink configurations
 - link:
-    # Nushell config (cross-platform)
-    ~/.config/nushell:
-      path: windows/nushell
-      create: true
-
-    # dotfiles CLI (cross-platform; Windows runs it via the Nushell `dotfiles` command)
+    # dotfiles CLI (cross-platform; Windows runs it through dotfiles.cmd)
     ~/.local/bin/dotfiles:
       path: shared/bin/dotfiles
+      create: true
+    ~/.local/bin/dotfiles.cmd:
+      path: windows/bin/dotfiles.cmd
+      if: 'cmd /c exit 0'
+      create: true
+
+    # PowerShell 7 profile (Windows)
+    ~/Documents/PowerShell/Microsoft.PowerShell_profile.ps1:
+      path: windows/powershell/profile.ps1
+      if: 'cmd /c exit 0'
       create: true
 
     # Git config (cross-platform)

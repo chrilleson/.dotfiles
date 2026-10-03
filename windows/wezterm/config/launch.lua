@@ -6,11 +6,10 @@ local options = {
 }
 
 if platform.is_win then
-   options.default_prog = { 'nu' }
+   options.default_prog = { 'pwsh', '-NoLogo' }
    options.launch_menu = {
-      { label = 'Nushell', args = { 'nu' } },
-      { label = 'Neovim', args = { 'nvim' } },
       { label = 'PowerShell Core', args = { 'pwsh', '-NoLogo' } },
+      { label = 'Neovim', args = { 'nvim' } },
       { label = 'PowerShell Desktop', args = { 'powershell' } },
       { label = 'Command Prompt', args = { 'cmd' } },
       { label = 'Msys2', args = { 'ucrt64.cmd' } },

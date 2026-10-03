@@ -12,7 +12,7 @@
 
 Tools are defined in tools.yaml; symlinks come from install.conf.yaml.
 Reset only removes symlinks that point into this repo, never real files.
-On Windows the Nushell `dotfiles` command runs this through Python.
+On Windows, ~/.local/bin/dotfiles.cmd runs this through Python.
 """
 
 import argparse

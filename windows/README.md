@@ -1,198 +1,51 @@
 # Windows-Specific Documentation
 
-This directory contains Windows-specific configuration and package definitions for the dotfiles repository.
+This directory contains the Windows-specific configuration: the PowerShell 7 profile,
+WezTerm config, the install script and the `dotfiles.cmd` wrapper.
 
-## Package Management
+## Stack
 
-### Package List (`tools.yaml`)
+| Tool | Role |
+|------|------|
+| PowerShell 7 (`pwsh`) | Interactive shell |
+| PSReadLine + PSFzf | Suggestions, highlighting, menu completion, fzf history search |
+| Starship | Prompt |
+| WezTerm | Terminal (starts `pwsh`) |
+| Scoop | Package manager |
+
+## Prerequisites
+
+1. **Git** - https://git-scm.com/
+2. **Python 3** - https://www.python.org/ (the installer includes the `py` launcher)
+   - plus **PyYAML**: `py -3 -m pip install pyyaml`
+3. **Scoop**:
+   ```powershell
+   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+   Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
+   ```
+4. **Developer Mode** (recommended) so symlinks work without admin:
+   Settings → Privacy & Security → For developers → Developer Mode
+
+PowerShell 7 itself doesn't need to be installed first: the installer runs in the
+built-in Windows PowerShell and installs `pwsh` via Scoop.
+
+## Installation
+
+```powershell
+.\windows\install.ps1
+```
+
+It checks prerequisites (`validate-prereqs.ps1`), adds `~/.local/bin` to your user
+`PATH`, sets `XDG_CONFIG_HOME` to `~/.config`, runs `dotfiles install --all`, and
+installs Node.js LTS plus global npm packages via fnm. Restart your terminal afterwards.
+
+## Packages
 
 Packages are listed per tool in `tools.yaml` at the repo root, under the `windows:` key.
 Apps from other Scoop buckets are written as `bucket/app` (for example `extras/wezterm`);
 the bucket is added automatically before installing.
 
-### Package Installation
-
-Packages are installed when you run:
-```powershell
-nu windows/install.nu
-```
-
-Or install and reset individual tools with the `dotfiles` command (after the first install):
-```nu
-dotfiles install            # pick tools interactively
-dotfiles install wezterm    # install one tool
-dotfiles list               # see what's installed
-```
-
-### Scoop Package Manager
-
-Scoop is a command-line installer for Windows that provides:
-- No UAC prompts or GUI wizards
-- Prevents PATH pollution from installing lots of programs
-- Installs programs in isolated locations
-- Easy package updates and uninstalls
-
-Learn more: https://scoop.sh
-
-## Prerequisites
-
-Before running the installer, ensure you have the following installed:
-
-### Required
-
-1. **Git**
-   - Download from: https://git-scm.com/
-   - Required for cloning repositories and Scoop functionality
-
-2. **Python**
-   - Download from: https://www.python.org/
-   - Required for dotbot installation framework and the `dotfiles` command
-   - Also install PyYAML: `python -m pip install pyyaml`
-
-3. **Scoop**
-   - Install with PowerShell:
-     ```powershell
-     Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-     Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
-     ```
-
-### Symlink Permissions
-
-Windows requires special permissions to create symbolic links. You have two options:
-
-**Option 1: Enable Developer Mode (Recommended)**
-1. Open Settings → Privacy & Security → For developers
-2. Enable "Developer Mode"
-3. Restart may be required
-
-**Option 2: Run as Administrator**
-- Right-click PowerShell → "Run as Administrator"
-- Not recommended for regular use
-
-The `validate-prereqs.ps1` script automatically checks for symlink permissions and warns if they're unavailable.
-
-## Installed Packages
-
-### Core Tools (main bucket)
-
-- **delta** - Better git diff viewer
-- **fzf** - Fuzzy finder
-- **zoxide** - Smarter cd command
-- **bat** - Cat clone with syntax highlighting
-- **ripgrep** - Fast text search
-- **fd** - User-friendly find alternative
-- **jq** - JSON processor
-- **starship** - Cross-shell prompt
-- **fnm** - Fast Node Manager
-- **neovim** - Modern vim
-- **7zip** - File archiver
-
-### GUI Applications (extras bucket)
-
-- **wezterm** - GPU-accelerated terminal emulator
-- **lazygit** - Terminal UI for git
-- **vscode** - Visual Studio Code
-
-### Fonts (nerd-fonts bucket)
-
-- **JetBrainsMono-NF** - JetBrains Mono with Nerd Font icons
-
-## Terminal Configuration
-
-### WezTerm
-
-WezTerm configuration is symlinked to `%USERPROFILE%\.config\wezterm\` on Windows.
-
-Configuration file: `wezterm/wezterm.lua`
-
-### Nushell
-
-Nushell configuration is symlinked to `%APPDATA%\nushell\` on Windows.
-
-Configuration files:
-- `nushell/config.nu` - Main configuration
-- `nushell/env.nu` - Environment variables
-
-### PowerShell
-
-PowerShell profile is symlinked to your PowerShell profile location.
-
-Configuration: `powershell/Microsoft.PowerShell_profile.ps1`
-
-### VS Code
-
-VS Code settings live in `shared/vscode/` and are symlinked to `%APPDATA%\Code\User\` on Windows.
-
-## Troubleshooting
-
-### Scoop Installation Issues
-
-If Scoop fails to install packages:
-```powershell
-# Update Scoop
-scoop update
-
-# Update all packages
-scoop update *
-
-# Check for problems
-scoop checkup
-```
-
-### Symlink Creation Failed
-
-If symlinks fail to create:
-1. Verify Developer Mode is enabled (Settings → For developers)
-2. Or run PowerShell as Administrator
-3. Check if files already exist at destination (remove them first)
-
-### PowerShell Execution Policy
-
-If you get execution policy errors:
-```powershell
-# Check current policy
-Get-ExecutionPolicy
-
-# Set policy for current user (recommended)
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-
-# Or for current session only
-Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
-```
-
-### Git Configuration Missing
-
-If `~/.gitconfig-local` is not created:
-```powershell
-# Copy the template
-cp git/gitconfig-local.example ~/.gitconfig-local
-
-# Edit with your details
-notepad ~/.gitconfig-local
-```
-
-### PATH Not Updated
-
-If newly installed commands aren't found:
-1. Restart your terminal
-2. Or refresh PATH manually:
-   ```powershell
-   $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-   ```
-
-### Font Not Appearing
-
-If JetBrainsMono font doesn't appear in applications after installation:
-1. Scoop installs fonts to `~/scoop/apps/`
-2. You may need to restart applications
-3. Verify font installation:
-   ```powershell
-   scoop list jetbrains
-   ```
-
-## Adding Custom Packages
-
-Add a tool to `tools.yaml` at the repo root:
+To add one:
 
 ```yaml
 your-tool:
@@ -200,85 +53,65 @@ your-tool:
   # windows: [extras/your-gui-app]  # other buckets
 ```
 
-Then install it with `dotfiles install your-tool`.
+Then install it with `dotfiles install your-tool`. Use `dotfiles list` to see what's
+installed and `dotfiles reset your-tool` to remove it.
 
-Search for available packages:
-```powershell
-scoop search package-name
-```
+## The `dotfiles` command
 
-## Script Overview
+`windows/bin/dotfiles.cmd` is linked to `~/.local/bin/dotfiles.cmd` and runs the Python
+CLI with `py -3` (or `python`), so `dotfiles` works in PowerShell, cmd and WezTerm.
+See the root README for the commands.
 
-### Core Scripts
+## Configuration
 
-- **install.nu** - Main installation script (runs `dotfiles install --all`)
-- **validate-prereqs.ps1** - Prerequisite validation script
+### PowerShell 7
 
-### Usage
+`powershell/profile.ps1` is linked to `~/Documents/PowerShell/Microsoft.PowerShell_profile.ps1`.
+If your Documents folder is redirected (e.g. to OneDrive), `install.ps1` also links it there.
 
-All scripts are automatically called by `install.ps1` or `install.nu`. To run individual scripts:
+It mirrors the zsh setup on macOS/Linux:
+- fish-style inline suggestions from history (→ to accept, Ctrl+→ for one word)
+- syntax highlighting and Tab menu completion
+- ↑/↓ search history for what you've typed
+- Ctrl+R / Ctrl+T fzf history and file search (PSFzf)
+- Starship, zoxide, fnm, and the `ls`/`la`/`ll`/`lt` eza aliases
 
-```powershell
-# Validate prerequisites only
-powershell -ExecutionPolicy Bypass -File .\windows\validate-prereqs.ps1
+### WezTerm
 
-# Install packages and link configs only
-python shared/bin/dotfiles install --all
-```
+`wezterm/` is linked to `~/.config/wezterm/`; the default program is `pwsh`.
 
-## Next Steps After Installation
+### Neovim
 
-1. **Restart your terminal** to refresh PATH and environment variables
+`shared/nvim` is linked to `~/.config/nvim`. Neovim reads it there because the installer
+sets `XDG_CONFIG_HOME`.
 
-2. **Configure Git** (if not already done):
-   ```powershell
-   # Edit your local git config
-   notepad ~/.gitconfig-local
-   ```
+### VS Code
 
-3. **Launch WezTerm** for the configured terminal experience
+VS Code settings live in `shared/vscode/` and are linked to `%APPDATA%\Code\User\`.
 
-4. **Start Nushell**:
-   ```powershell
-   nu
-   ```
+## Troubleshooting
 
-5. **Verify installations**:
-   ```powershell
-   # Check tool versions
-   git --version
-   nvim --version
-   node --version
-   starship --version
-   ```
-
-## Updating Packages
-
-Keep your tools up to date:
+### Running scripts is disabled
 
 ```powershell
-# Update Scoop itself
-scoop update
-
-# Update all installed packages
-scoop update *
-
-# Update specific package
-scoop update git
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
-## Uninstalling Packages
+### Symlink creation failed
 
-Remove packages you no longer need:
+1. Enable Developer Mode (Settings → For developers), or run the installer as Administrator
+2. Dotbot never overwrites real files: move existing files at the destination aside and run `dotfiles link`
+
+### Commands not found after installing
+
+Restart your terminal, or refresh `PATH` in the current session:
 
 ```powershell
-# Uninstall a package
-scoop uninstall package-name
-
-# Remove old versions
-scoop cleanup *
+$env:Path = [Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [Environment]::GetEnvironmentVariable("Path","User")
 ```
 
-## Contributing
+### Scoop problems
 
-If you encounter issues or have improvements for Windows support, please open an issue or pull request on GitHub.
+```powershell
+scoop update; scoop update *; scoop checkup
+```

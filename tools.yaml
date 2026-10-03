@@ -9,19 +9,23 @@
 #   reset:                 per-OS shell commands run before uninstalling
 #
 # Install commands run on every install, so keep them idempotent.
-# Prerequisites (git, python, zsh, nushell, brew, paru, scoop) are set up by the
+# Prerequisites (git, python, zsh, brew, paru, scoop) are set up by the
 # install scripts and never listed here, so reset can't remove them.
 
 dotfiles:
-  links: [shared/bin]
+  links: [shared/bin, windows/bin]
 
 zsh:
   links: [shared/zsh, linux/zsh, macos/zsh]
   macos: [zsh-autosuggestions, zsh-syntax-highlighting, zsh-completions]
   linux: [zsh-autosuggestions, zsh-syntax-highlighting, zsh-completions]
 
-nushell:
-  links: [windows/nushell]
+powershell:
+  links: [windows/powershell]
+  windows: [pwsh]
+  install:
+    windows:
+      - 'pwsh -NoProfile -Command "if (-not (Get-Module -ListAvailable PSFzf)) { Install-Module PSFzf -Scope CurrentUser -Force }"'
 
 git:
   links: [shared/git]
