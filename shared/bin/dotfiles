@@ -5,8 +5,10 @@
   dotfiles install TOOL...      install specific tools (-n preview, -y no prompt)
   dotfiles install --all        install everything and link all configs
   dotfiles link                 re-run dotbot (symlinks only)
-  dotfiles dotbot               check for a newer Dotbot release
-  dotfiles dotbot --update      replace the vendored dotbot/ with the newest release
+  dotfiles dotbot               check for a newer Dotbot version
+  dotfiles dotbot --update      switch the vendored dotbot/ to the newest version
+  dotfiles dotbot VERSION       switch it to a specific version (up or down)
+  dotfiles dotbot --list        list available versions
   dotfiles list                 show tools and what's linked/installed
   dotfiles reset                pick tools to reset interactively
   dotfiles reset TOOL...        reset specific tools (-n preview, -y no prompt)
@@ -587,16 +589,28 @@ def version_key(version):
 
 
 def vendored_dotbot_version():
-    with open(os.path.join(REPO, "dotbot", "src", "dotbot", "__about__.py")) as f:
-        return re.search(r'__version__ = "([^"]+)"', f.read()).group(1)
+    # where __version__ lives: 1.23+ / 1.21-1.22 / 1.20
+    for path in ("src/dotbot/__about__.py", "src/dotbot/__init__.py", "dotbot/__init__.py"):
+        try:
+            with open(os.path.join(REPO, "dotbot", *path.split("/"))) as f:
+                match = re.search(r'__version__ = "([^"]+)"', f.read())
+        except OSError:
+            continue
+        if match:
+            return match.group(1)
+    sys.exit("error: can't find the vendored dotbot version in dotbot/")
 
 
-def latest_dotbot_version():
-    """Newest vX.Y.Z tag; tags are more complete than GitHub releases for dotbot."""
+# Older releases need Python 2 support or a pyyaml git submodule the tarball doesn't include
+MIN_DOTBOT_VERSION = "1.20.0"
+
+
+def dotbot_versions():
+    """All vX.Y.Z tags, oldest first; tags are more complete than GitHub releases for dotbot."""
     url = f"https://api.github.com/repos/{DOTBOT_REPO}/tags?per_page=100"
     with urllib.request.urlopen(url, timeout=15) as resp:
         tags = [t["name"][1:] for t in json.load(resp) if re.fullmatch(r"v\d+\.\d+\.\d+", t["name"])]
-    return max(tags, key=version_key)
+    return sorted(tags, key=version_key)
 
 
 def replace_dotbot(version):
@@ -632,39 +646,65 @@ def replace_dotbot(version):
 def cmd_dotbot(args):
     current = vendored_dotbot_version()
     try:
-        latest = latest_dotbot_version()
+        versions = dotbot_versions()
     except (OSError, ValueError) as e:
-        sys.exit(f"error: couldn't check GitHub for dotbot releases: {e}")
+        sys.exit(f"error: couldn't check GitHub for dotbot versions: {e}")
+    latest = versions[-1]
 
-    if version_key(latest) <= version_key(current):
-        print(f"{GREEN}✓{NC} Dotbot {current} is up to date")
+    if args.list:
+        for v in reversed(versions):
+            if version_key(v) < version_key(MIN_DOTBOT_VERSION):
+                break
+            marks = [m for m, on in (("installed", v == current), ("latest", v == latest)) if on]
+            line = f"{v}  {DIM}({', '.join(marks)}){NC}" if marks else v
+            print(f"{GREEN}{line}{NC}" if v == current else line)
         return 0
 
-    print(f"Dotbot {BLUE}{current}{NC} → {GREEN}{latest}{NC} available")
-    print(f"  changes: https://github.com/{DOTBOT_REPO}/compare/v{current}...v{latest}")
-    if not args.update:
-        print("Run `dotfiles dotbot --update` to update the vendored copy.")
+    if args.version:
+        target = args.version.lstrip("v")
+        if target not in versions:
+            sys.exit(f"error: no dotbot version {target} (see `dotfiles dotbot --list`)")
+        if version_key(target) < version_key(MIN_DOTBOT_VERSION):
+            sys.exit(f"error: versions before {MIN_DOTBOT_VERSION} aren't supported")
+    elif args.update:
+        target = latest
+    else:
+        # just check
+        if version_key(latest) <= version_key(current):
+            print(f"{GREEN}✓{NC} Dotbot {current} is up to date")
+        else:
+            print(f"Dotbot {BLUE}{current}{NC} → {GREEN}{latest}{NC} available")
+            print(f"  changes: https://github.com/{DOTBOT_REPO}/compare/v{current}...v{latest}")
+            print("Run `dotfiles dotbot --update` to update the vendored copy.")
         return 0
+
+    if target == current:
+        print(f"{GREEN}✓{NC} Dotbot is already {current}")
+        return 0
+    verb = "update" if version_key(target) > version_key(current) else "downgrade"
+    low, high = sorted([current, target], key=version_key)
+    print(f"Dotbot {BLUE}{current}{NC} → {GREEN}{target}{NC} ({verb})")
+    print(f"  changes: https://github.com/{DOTBOT_REPO}/compare/v{low}...v{high}")
 
     dirty = subprocess.run(
         ["git", "status", "--porcelain", "--", "dotbot"], cwd=REPO, capture_output=True, text=True
     ).stdout.strip()
     if dirty:
         sys.exit("error: dotbot/ has uncommitted changes; commit or discard them first")
-    if not args.yes and not confirm(f"\nReplace dotbot/ with {latest}? [y/N] "):
+    if not args.yes and not confirm(f"\nReplace dotbot/ with {target}? [y/N] "):
         print("Aborted")
         return 1
 
-    print(f"{YELLOW}→{NC} Downloading dotbot {latest}...")
+    print(f"{YELLOW}→{NC} Downloading dotbot {target}...")
     try:
-        replace_dotbot(latest)
+        replace_dotbot(target)
     except (OSError, RuntimeError, tarfile.TarError) as e:
-        print(f"{RED}✗{NC} Update failed, dotbot/ left unchanged: {e}")
+        print(f"{RED}✗{NC} {verb.capitalize()} failed, dotbot/ left unchanged: {e}")
         return 1
 
-    print(f"{GREEN}✓{NC} Dotbot updated to {vendored_dotbot_version()}\n")
+    print(f"{GREEN}✓{NC} Dotbot is now {vendored_dotbot_version()}\n")
     subprocess.run(["git", "status", "--short", "--", "dotbot"], cwd=REPO)
-    print(f"\nReview, then commit: git add dotbot && git commit -m \"chore: update dotbot to {latest}\"")
+    print(f"\nReview, then commit: git add dotbot && git commit -m \"chore: {verb} dotbot to {target}\"")
     return 0
 
 
@@ -713,8 +753,10 @@ def main():
 
     sub.add_parser("link", help="re-run dotbot to (re)create all symlinks").set_defaults(func=cmd_link)
 
-    p = sub.add_parser("dotbot", help="check for (or install) a newer vendored Dotbot")
-    p.add_argument("--update", action="store_true", help="replace dotbot/ with the newest release")
+    p = sub.add_parser("dotbot", help="check, update or pin the vendored Dotbot version")
+    p.add_argument("version", nargs="?", metavar="VERSION", help="switch dotbot/ to this version (up or down)")
+    p.add_argument("--update", action="store_true", help="switch dotbot/ to the newest version")
+    p.add_argument("--list", action="store_true", help="list available versions")
     p.add_argument("-y", "--yes", action="store_true", help="don't ask for confirmation")
     p.set_defaults(func=cmd_dotbot)
     sub.add_parser("list", help="show tools and what's linked/installed").set_defaults(func=cmd_list)

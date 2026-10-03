@@ -46,6 +46,7 @@ dotfiles upgrade [TOOL...]      # upgrade installed packages
 dotfiles reset [TOOL...]        # unlink configs and uninstall packages
 dotfiles link                   # re-create all symlinks
 dotfiles dotbot [--update]      # check for (or install) a newer vendored Dotbot
+dotfiles dotbot 1.23.1          # pin Dotbot to a version (--list shows them)
 ```
 
 Without tool names, `install`, `upgrade` and `reset` open a picker; use `--all` for
