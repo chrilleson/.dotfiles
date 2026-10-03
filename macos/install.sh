@@ -64,7 +64,6 @@ install_packages() {
         starship tmux \
         git-delta fzf zoxide bat ripgrep fd jq eza \
         neovim lazygit gh fnm \
-        anomalyco/tap/opencode \
         zsh-autosuggestions zsh-syntax-highlighting zsh-completions
 
     brew install --cask ghostty font-jetbrains-mono-nerd-font orbstack

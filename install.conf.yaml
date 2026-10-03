@@ -116,13 +116,6 @@
       if: '[ "$(uname)" = "Darwin" ]'
       create: true
 
-# Opencode config (Linux/macOS)
-- link:
-    ~/.config/opencode/config.json:
-      path: shared/opencode/opencode.json
-      if: '[ "$(uname)" = "Linux" ] || [ "$(uname)" = "Darwin" ]'
-      create: true
-
 # Create local git config if it doesn't exist
 - shell:
   - description: Create local gitconfig

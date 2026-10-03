@@ -103,11 +103,6 @@ The `validate-prereqs.ps1` script automatically checks for symlink permissions a
 
 - **JetBrainsMono-NF** - JetBrains Mono with Nerd Font icons
 
-### Optional Packages
-
-- **opencode** - AI-powered code editor
-  - Install manually: `scoop install opencode`
-
 ## Terminal Configuration
 
 ### WezTerm
@@ -273,11 +268,6 @@ nu windows/install-packages.nu
    nvim --version
    node --version
    starship --version
-   ```
-
-6. **Install optional packages** if needed:
-   ```powershell
-   scoop install opencode
    ```
 
 ## Updating Packages

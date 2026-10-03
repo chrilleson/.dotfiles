@@ -13,7 +13,6 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 │   ├── git/             # gitconfig, gitignore, gitconfig-local.example
 │   ├── starship/        # starship.toml
 │   ├── node/            # npmrc, prettierrc, eslintrc
-│   ├── opencode/        # opencode config (config.json)
 │   └── nvim/            # LazyVim config
 ├── linux/               # Linux-specific configs
 │   ├── zsh/             # Zsh OS-specific config (os.zsh)
@@ -70,8 +69,6 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 1. **Git** - included with Xcode Command Line Tools: `xcode-select --install`
 2. **Python 3** - included with Xcode Command Line Tools
 3. **Homebrew** - installed automatically by the install script if missing
-
-**Note:** OpenCode is installed via the official Homebrew tap: `brew install anomalyco/tap/opencode`
 
 ## Installation
 
@@ -151,7 +148,6 @@ It utilizes the [Dotbot repository](https://github.com/anishathalye/dotbot) for 
 | **Starship** | ✓ | ✓ | ✓ |
 | **Neovim** (LazyVim) | ✓ | ✓ | ✓ |
 | **Node.js** (fnm, eslint, prettier) | ✓ | ✓ | ✓ |
-| **OpenCode** | ✓ | ✓ | ✓ |
 | **VS Code** | ✓ | ✓ | |
 | **Nushell** | ✓ | | |
 | **WezTerm** | ✓ | | |

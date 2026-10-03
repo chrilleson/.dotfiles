@@ -24,7 +24,5 @@
   "nerd-fonts": [
     "JetBrainsMono-NF"
   ],
-  "optional": [
-    "opencode"
-  ]
+  "optional": []
 }

@@ -12,7 +12,7 @@ setopt AUTO_CD INTERACTIVE_COMMENTS
 
 # --- paths ---
 typeset -U path   # dedupe PATH
-path=(~/.local/bin ~/.opencode/bin ~/.local/share/bun/bin $path)
+path=(~/.local/bin ~/.local/share/bun/bin $path)
 
 # --- XDG-compliant tool locations ---
 export BUN_INSTALL=~/.local/share/bun

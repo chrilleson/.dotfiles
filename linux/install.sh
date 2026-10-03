@@ -47,7 +47,7 @@ install_packages() {
         zsh zsh-autosuggestions zsh-syntax-highlighting zsh-completions starship ghostty tmux \
         git-delta fzf zoxide bat ripgrep fd jq eza \
         neovim lazygit github-cli \
-        fnm-bin opencode-bin dotnet-sdk \
+        fnm-bin dotnet-sdk \
         docker docker-compose docker-buildx
     echo -e "${GREEN}✓${NC} Packages installed"
 }
