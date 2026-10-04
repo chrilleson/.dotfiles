@@ -58,9 +58,9 @@ wezterm:
 
 neovim:
   links: [shared/nvim]
-  macos: [neovim]
-  linux: [neovim]
-  windows: [neovim]
+  macos: [neovim, tree-sitter-cli]
+  linux: [neovim, tree-sitter-cli]
+  windows: [neovim, tree-sitter]
 
 vscode:
   links: [shared/vscode]
