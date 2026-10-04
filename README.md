@@ -54,8 +54,44 @@ everything. They preview what they'll do and ask first (`-n` preview only, `-y` 
 On Arch, `upgrade` always runs `paru -Syu`, since Arch doesn't support partial upgrades.
 
 Packages live in [`tools.yaml`](tools.yaml) (brew, paru and Scoop per tool) and links in
-[`install.conf.yaml`](install.conf.yaml). To add a tool, add it to `tools.yaml` and run
-`dotfiles install <tool>`.
+[`install.conf.yaml`](install.conf.yaml). See [Adding a tool](#adding-a-tool).
+
+## Adding a tool
+
+`tools.yaml` is the only package list. The install scripts run `dotfiles install --all`,
+so anything you add there is installed on every new machine.
+
+1. **Add an entry to `tools.yaml`** that lists the package name for each OS you want it on.
+   Leave out an OS to skip it there:
+   ```yaml
+   fastfetch:
+     macos: [fastfetch]      # brew (casks and tap/formula work too)
+     linux: [fastfetch]      # paru (official repos or AUR, e.g. foo-bin)
+     windows: [fastfetch]    # scoop (bucket/app for non-main buckets, e.g. extras/foo)
+   ```
+   Look up the names with `brew search`, `paru -Ss` and `scoop search`, since they
+   sometimes differ (e.g. `git-delta` vs `delta`).
+2. **Install it:** `dotfiles install fastfetch` (`-n` previews first).
+3. **Commit** `tools.yaml`, then run `dotfiles install <tool>` on your other machines.
+
+**With a config file:** put it under `shared/<tool>/` (or `macos/`, `linux/`, `windows/`
+if it's OS-specific), add a link to `install.conf.yaml`, and list the folder under
+`links:` so `install`/`reset` handle the link together with the package:
+```yaml
+# install.conf.yaml, inside the first `- link:` block
+    ~/.config/fastfetch/config.jsonc:
+      path: shared/fastfetch/config.jsonc
+      create: true
+
+# tools.yaml
+fastfetch:
+  links: [shared/fastfetch]
+  ...
+```
+
+**Without a package:** use per-OS `install:`, `upgrade:` and `reset:` shell commands
+instead (see `fonts` and `pass-cli` in `tools.yaml`). Keep `install` commands idempotent,
+because they run on every install.
 
 ## What's Included
 
