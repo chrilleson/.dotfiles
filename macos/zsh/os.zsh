@@ -11,3 +11,7 @@ fi
 # Plugins (brew install zsh-autosuggestions zsh-syntax-highlighting)
 ZSH_AUTOSUGGEST_PATH=$HOMEBREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 ZSH_SYNTAX_HL_PATH=$HOMEBREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+
+# pnpm (location set by `pnpm setup`)
+export PNPM_HOME=~/Library/pnpm
+path=($PNPM_HOME/bin $path)
