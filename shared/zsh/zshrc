@@ -79,3 +79,6 @@ alias egrep='egrep --color=auto'
 # --- plugins (syntax-highlighting must be last) ---
 [[ -r $ZSH_AUTOSUGGEST_PATH ]] && source $ZSH_AUTOSUGGEST_PATH
 [[ -r $ZSH_SYNTAX_HL_PATH   ]] && source $ZSH_SYNTAX_HL_PATH
+
+eval "$(fnm env --use-on-cd --shell zsh)"
+
