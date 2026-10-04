@@ -167,3 +167,8 @@ pass-cli:
 
 7zip:
   windows: [7zip]
+
+fastfetch:
+  macos: [fastfetch]
+  linux: [fastfetch]
+  windows: [fastfetch]

@@ -68,3 +68,8 @@ function .. { Set-Location .. }
 function ... { Set-Location ..\.. }
 function .... { Set-Location ..\..\.. }
 function ..... { Set-Location ..\..\..\.. }
+
+# --- greeting: system info on every new shell ---
+if (Get-Command fastfetch -ErrorAction SilentlyContinue) {
+    fastfetch
+}
