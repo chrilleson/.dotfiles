@@ -142,6 +142,10 @@ jq:
   linux: [jq]
   windows: [jq]
 
+yq:
+  macos: [yq]
+  linux: [go-yq]
+
 eza:
   macos: [eza]
   linux: [eza]
