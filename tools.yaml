@@ -185,3 +185,7 @@ fastfetch:
   macos: [fastfetch]
   linux: [fastfetch]
   windows: [fastfetch]
+
+obsidian:
+  macos: [obsidian]
+  linux: [obsidian]
