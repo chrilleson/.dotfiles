@@ -122,6 +122,10 @@ zoxide:
   linux: [zoxide]
   windows: [zoxide]
 
+atuin:
+  macos: [atuin]
+  linux: [atuin]
+
 bat:
   macos: [bat]
   linux: [bat]
