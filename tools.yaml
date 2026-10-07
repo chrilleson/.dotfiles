@@ -47,7 +47,7 @@ starship:
   windows: [starship]
 
 tmux:
-  links: [linux/tmux, linux/bin/tmux-dev, macos/tmux]
+  links: [shared/tmux, linux/tmux, linux/bin/tmux-dev, macos/tmux]
   macos: [tmux]
   linux: [tmux]
 

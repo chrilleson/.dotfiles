@@ -108,7 +108,7 @@ because they run on every install. Add a per-OS `check:` command that succeeds o
 ## Layout
 
 ```
-shared/     configs for every OS (git, zsh, nvim, starship, vscode, node) and the dotfiles CLI
+shared/     configs for every OS (git, zsh, nvim, starship, tmux scripts, vscode, node) and the dotfiles CLI
 macos/      macOS configs and install.sh
 linux/      Linux configs and install.sh            (see linux/README.md)
 windows/    PowerShell profile, WezTerm, install.ps1 (see windows/README.md)

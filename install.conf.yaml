@@ -111,6 +111,10 @@
       path: linux/bin/tmux-dev
       if: '[ "$(uname)" = "Linux" ]'
       create: true
+    ~/.config/tmux/scripts:
+      path: shared/tmux
+      if: '[ "$(uname)" = "Linux" ]'
+      create: true
 
 # Zsh (Linux)
 - link:
@@ -145,6 +149,10 @@
 - link:
     ~/.config/tmux/tmux.conf:
       path: macos/tmux/tmux.conf
+      if: '[ "$(uname)" = "Darwin" ]'
+      create: true
+    ~/.config/tmux/scripts:
+      path: shared/tmux
       if: '[ "$(uname)" = "Darwin" ]'
       create: true
 
