@@ -56,6 +56,16 @@ dev() {
   fi
 }
 
+# --- y: run yazi, then cd to the directory it was left in ---
+y() {
+  local tmp cwd
+  tmp=$(mktemp -t "yazi-cwd.XXXXXX")
+  yazi "$@" --cwd-file="$tmp"
+  IFS= read -r -d '' cwd < "$tmp"
+  [[ -n $cwd && $cwd != $PWD ]] && builtin cd -- "$cwd"
+  rm -f -- "$tmp"
+}
+
 # --- man pages via bat ---
 export MANROFFOPT="-c"
 export MANPAGER="sh -c 'col -bx | bat -l man -p'"

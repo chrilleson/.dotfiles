@@ -126,6 +126,10 @@ atuin:
   macos: [atuin]
   linux: [atuin]
 
+yazi:
+  macos: [yazi]
+  linux: [yazi]
+
 bat:
   macos: [bat]
   linux: [bat]
