@@ -8,12 +8,14 @@
 # Environment:
 #   DOTFILES_DIR           where to clone (default: ~/dev/repositories/personal/.dotfiles)
 #   DOTFILES_SKIP_INSTALL  set to 1 to only check prerequisites and clone
+#   DOTFILES_SSH_HOST      SSH host alias to push with (default: github-personal)
 #
 # Everything runs from main() at the bottom, so a partial download does nothing.
 
 set -euo pipefail
 
 REPO_URL="https://github.com/chrilleson/.dotfiles.git"
+SSH_HOST="${DOTFILES_SSH_HOST:-github-personal}"
 DOTFILES_DIR="${DOTFILES_DIR:-$HOME/dev/repositories/personal/.dotfiles}"
 
 RED='\033[0;31m'
@@ -93,6 +95,21 @@ clone_repo() {
     ok "Dotfiles in $DOTFILES_DIR"
 }
 
+# Clone over HTTPS (works before any SSH key exists), but push over SSH once the
+# host alias is set up in ~/.ssh/config; `ssh -G` echoes unknown aliases unchanged.
+use_ssh_remote() {
+    local ssh_url="git@$SSH_HOST:chrilleson/.dotfiles.git"
+    [ "$(git -C "$DOTFILES_DIR" remote get-url origin)" = "$REPO_URL" ] || return 0
+    command -v ssh &> /dev/null || return 0
+    if ssh -G "$SSH_HOST" < /dev/null 2> /dev/null | grep -qx 'hostname github.com'; then
+        git -C "$DOTFILES_DIR" remote set-url origin "$ssh_url"
+        ok "Remote set to $ssh_url"
+    else
+        echo "  Remote stays on HTTPS: no '$SSH_HOST' host in ~/.ssh/config. Once it exists, run:"
+        echo "  git -C $DOTFILES_DIR remote set-url origin $ssh_url"
+    fi
+}
+
 main() {
     echo -e "${BLUE}Dotfiles bootstrap${NC}"
     echo ""
@@ -105,6 +122,7 @@ main() {
     esac
 
     clone_repo
+    use_ssh_remote
 
     if [ "${DOTFILES_SKIP_INSTALL:-}" = "1" ]; then
         ok "Skipping install (DOTFILES_SKIP_INSTALL=1). Run: $DOTFILES_DIR/$os/install.sh"

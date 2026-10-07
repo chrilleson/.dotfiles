@@ -6,6 +6,7 @@
 # Environment:
 #   DOTFILES_DIR           where to clone (default: ~\dev\repositories\personal\.dotfiles)
 #   DOTFILES_SKIP_INSTALL  set to 1 to only check prerequisites and clone
+#   DOTFILES_SSH_HOST      SSH host alias to push with (default: github-personal)
 #
 # Runs in Windows PowerShell 5.1 or PowerShell 7; 5.1-compatible and ASCII-only.
 # Everything runs from Main at the bottom, so a partial download does nothing.
@@ -14,6 +15,7 @@ function Main {
     $ErrorActionPreference = "Stop"
 
     $RepoUrl = "https://github.com/chrilleson/.dotfiles.git"
+    $SshHost = if ($env:DOTFILES_SSH_HOST) { $env:DOTFILES_SSH_HOST } else { "github-personal" }
     $DotfilesDir = if ($env:DOTFILES_DIR) { $env:DOTFILES_DIR } else { Join-Path $HOME "dev\repositories\personal\.dotfiles" }
 
     function Step($msg) { Write-Host "-> $msg" -ForegroundColor Yellow }
@@ -94,6 +96,22 @@ function Main {
     }
     if ($LASTEXITCODE -ne 0) { Fail "git failed" }
     Ok "Dotfiles in $DotfilesDir"
+
+    # Clone over HTTPS (works before any SSH key exists), but push over SSH once the
+    # host alias is set up in ~/.ssh/config; `ssh -G` echoes unknown aliases unchanged.
+    $SshUrl = "git@${SshHost}:chrilleson/.dotfiles.git"
+    if ((git -C $DotfilesDir remote get-url origin) -eq $RepoUrl -and (Has ssh)) {
+        $ErrorActionPreference = "Continue"
+        $resolved = ssh -G $SshHost 2>$null | Where-Object { $_ -eq "hostname github.com" }
+        $ErrorActionPreference = "Stop"
+        if ($resolved) {
+            git -C $DotfilesDir remote set-url origin $SshUrl
+            Ok "Remote set to $SshUrl"
+        } else {
+            Write-Host "  Remote stays on HTTPS: no '$SshHost' host in ~/.ssh/config. Once it exists, run:"
+            Write-Host "  git -C $DotfilesDir remote set-url origin $SshUrl"
+        }
+    }
 
     if ($env:DOTFILES_SKIP_INSTALL -eq "1") {
         Ok "Skipping install (DOTFILES_SKIP_INSTALL=1). Run: $DotfilesDir\windows\install.ps1"
