@@ -10,7 +10,6 @@
 #   ctrl-w   = window mode
 #   ctrl-p   = projects mode ($TMUX_PROJECTS_DIR, default ~/dev/repositories/*/*)
 #   ctrl-z   = zoxide mode
-#   ctrl-o   = opencode sessions
 #   ctrl-n   = claude sessions
 #   ctrl-b   = back to sessions
 #   esc      = quit
@@ -19,7 +18,7 @@ CURRENT=$(tmux display-message -p '#S')
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HELPER="$SCRIPT_DIR/session-helper.sh"
 
-SESSIONS_LABEL=' C-d:kill  C-r:rename  C-w:windows  C-p:projects  C-z:zoxide  C-o:opencode  C-n:claude ─╮'
+SESSIONS_LABEL=' C-d:kill  C-r:rename  C-w:windows  C-p:projects  C-z:zoxide  C-n:claude ─╮'
 BACK_LABEL=' C-b:back ─╮'
 KILL_BACK_LABEL=' C-d:kill  C-b:back ─╮'
 
@@ -50,7 +49,6 @@ COLORS='bg+:#313244,fg+:#cdd6f4,pointer:#89b4fa,prompt:#89b4fa,border:#7f849c,la
     --bind="ctrl-w:change-border-label( Windows )+reload('$HELPER' windows '$CURRENT')+change-prompt(  )+change-input-label($KILL_BACK_LABEL)" \
     --bind="ctrl-p:change-border-label( Projects )+reload('$HELPER' projects)+change-prompt(  )+change-input-label($BACK_LABEL)" \
     --bind="ctrl-z:change-border-label( Zoxide )+reload(zoxide query -l 2>/dev/null | head -50)+change-prompt(  )+change-input-label($BACK_LABEL)" \
-    --bind="ctrl-o:change-border-label( Opencode )+reload('$HELPER' agents opencode-)+change-prompt(  )+change-input-label($KILL_BACK_LABEL)" \
     --bind="ctrl-n:change-border-label( Claude )+reload('$HELPER' agents claude-)+change-prompt(  )+change-input-label($KILL_BACK_LABEL)" \
     --bind="ctrl-b:change-border-label( Sessions )+reload('$HELPER' sessions '$CURRENT')+change-prompt( )+change-input-label($SESSIONS_LABEL)" \
     --bind='esc:abort' \

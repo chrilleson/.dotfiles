@@ -7,7 +7,7 @@
 #   sessions <current>          regular sessions, minus <current> and agent sessions
 #   windows <current>           all windows outside <current>
 #   projects                    project directories under $TMUX_PROJECTS_DIR
-#   agents <prefix>             sessions whose name starts with <prefix> (claude-, opencode-)
+#   agents <prefix>             sessions whose name starts with <prefix> (claude-)
 #   reload <current>            the list for the mode in $FZF_BORDER_LABEL (set by fzf)
 #   kill <selection>            kill the selected session or window
 #   switch <query> <selection>  switch to a session/window/directory, or create one
@@ -15,7 +15,7 @@
 set -euo pipefail
 
 PROJECTS_DIR="${TMUX_PROJECTS_DIR:-$HOME/dev/repositories}"
-AGENT_SESSIONS='^(claude|opencode)-'
+AGENT_SESSIONS='^claude-'
 
 list_sessions() {
     tmux list-sessions -F '#{session_name}|#{session_path}|#{session_windows}w' | column -t -s'|'
@@ -53,7 +53,6 @@ case "$action" in
             *Windows*)  "$0" windows "${2:-}" ;;
             *Projects*) "$0" projects ;;
             *Zoxide*)   zoxide query -l 2>/dev/null | head -50 ;;
-            *Opencode*) "$0" agents opencode- ;;
             *Claude*)   "$0" agents claude- ;;
             *)          "$0" sessions "${2:-}" ;;
         esac
