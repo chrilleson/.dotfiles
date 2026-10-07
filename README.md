@@ -33,7 +33,9 @@ or `.\windows\install.ps1`.
   fnm install --lts && fnm default lts-latest
   npm install -g typescript ts-node pnpm eslint prettier @fsouza/prettierd neovim
   ```
-- The clone uses HTTPS. To push: `git remote set-url origin git@github.com:chrilleson/.dotfiles.git`
+- The clone uses HTTPS. The bootstrapper switches it to SSH when `~/.ssh/config` has a
+  `github-personal` host (`DOTFILES_SSH_HOST` to change); otherwise, to push:
+  `git remote set-url origin git@github-personal:chrilleson/.dotfiles.git`
 
 ## The `dotfiles` command
 
