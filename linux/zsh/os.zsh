@@ -20,3 +20,29 @@ alias apt-get='man pacman'
 tmux-dev() {
   bash ~/.local/bin/tmux-dev "${1:-dev}" "${2:-$HOME}" "${@:3}"
 }
+
+# --- greeting: pending upgrades, from a count refreshed in the background ---
+# checkupdates (pacman-contrib) syncs a temp copy of the db, so no root is needed.
+# Refreshes at most every 6 hours; an offline check keeps the previous count.
+os_greeting() {
+  local cache=${XDG_CACHE_HOME:-$HOME/.cache}/dotfiles/updates
+  local -a mtime
+  zmodload zsh/datetime
+  zmodload -F zsh/stat b:zstat
+  zstat -A mtime +mtime -- $cache 2>/dev/null
+  if (( EPOCHSECONDS - ${mtime[1]:-0} > 6 * 3600 )) && (( $+commands[checkupdates] )); then
+    mkdir -p ${cache:h}
+    touch $cache  # claim the refresh so other new shells don't start one too
+    (
+      local repo aur
+      repo=$(checkupdates 2>/dev/null)
+      (( $? == 1 )) && exit  # offline or failed: keep the old count
+      aur=$(paru -Qua 2>/dev/null)
+      local -a pkgs=(${(f)repo} ${(f)aur})
+      print $#pkgs > $cache.tmp && mv $cache.tmp $cache
+    ) &!
+  fi
+  local n=$(<$cache 2>/dev/null)
+  (( n > 0 )) && print -P "%F{yellow}↑%f $n package updates available: run %Bdotfiles upgrade --all%b"
+  return 0
+}

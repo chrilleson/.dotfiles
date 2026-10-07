@@ -19,7 +19,7 @@ dotfiles:
 zsh:
   links: [shared/zsh, linux/zsh, macos/zsh]
   macos: [zsh-autosuggestions, zsh-syntax-highlighting, zsh-completions]
-  linux: [zsh-autosuggestions, zsh-syntax-highlighting, zsh-completions]
+  linux: [zsh-autosuggestions, zsh-syntax-highlighting, zsh-completions, pacman-contrib]
 
 powershell:
   links: [windows/powershell]

@@ -83,3 +83,5 @@ alias egrep='egrep --color=auto'
 
 # --- greeting: system info on every new shell ---
 command -v fastfetch >/dev/null && fastfetch
+# OS-specific additions from ~/.zshrc.os (e.g. pending upgrades on Linux)
+(( $+functions[os_greeting] )) && os_greeting
