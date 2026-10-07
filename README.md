@@ -91,7 +91,8 @@ fastfetch:
 
 **Without a package:** use per-OS `install:`, `upgrade:` and `reset:` shell commands
 instead (see `fonts` and `pass-cli` in `tools.yaml`). Keep `install` commands idempotent,
-because they run on every install.
+because they run on every install. Add a per-OS `check:` command that succeeds once the
+`install` commands are done, so `dotfiles install` skips them and the picker hides the tool.
 
 ## What's Included
 

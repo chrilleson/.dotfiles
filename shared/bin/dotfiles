@@ -235,6 +235,14 @@ def build_reset_plan(names, tools, include_unclaimed=False):
     return [step for step in plan if step["links"] or step["run"] or step["packages"]]
 
 
+def set_up(tool):
+    """True when the tool's check command for this OS passes, so its install commands can be skipped."""
+    cmd = (tool.get("check") or {}).get(OS)
+    if not cmd:
+        return False
+    return subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+
+
 def build_install_plan(names, tools):
     links = install_links()
     installed = installed_packages()
@@ -245,7 +253,7 @@ def build_install_plan(names, tools):
             "name": name,
             "action": "install",
             "links": unique([l for l in tool_links(tool, links) if applies(l) and not owned(l)]),
-            "run": (tool.get("install") or {}).get(OS, []),
+            "run": [] if set_up(tool) else (tool.get("install") or {}).get(OS, []),
             "packages": [p for p in tool.get(OS, []) if not is_installed(p, installed)],
         })
     return [step for step in plan if step["links"] or step["run"] or step["packages"]]

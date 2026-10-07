@@ -6,6 +6,8 @@
 #   links:                 repo paths whose links (from install.conf.yaml) belong to this tool
 #   macos/linux/windows:   packages (brew / paru / scoop; scoop takes bucket/app)
 #   install:               per-OS shell commands run after installing packages and linking
+#   check:                 per-OS shell command that succeeds when the install commands are
+#                          already done, so install skips them (and the picker hides the tool)
 #   reset:                 per-OS shell commands run before uninstalling
 #   upgrade:               per-OS shell commands run by `dotfiles upgrade` (for tools without a package)
 #
@@ -27,6 +29,8 @@ powershell:
   install:
     windows:
       - 'pwsh -NoProfile -Command "if (-not (Get-Module -ListAvailable PSFzf)) { Install-Module PSFzf -Scope CurrentUser -Force }"'
+  check:
+    windows: 'pwsh -NoProfile -Command "if (-not (Get-Module -ListAvailable PSFzf)) { exit 1 }"'
 
 git:
   links: [shared/git]
@@ -81,6 +85,11 @@ docker:
     linux:
       - sudo systemctl enable --now docker.service
       - id -nG "$USER" | grep -qw docker || sudo usermod -aG docker "$USER"
+  check:
+    linux: >-
+      systemctl is-enabled -q docker.service &&
+      systemctl is-active -q docker.service &&
+      id -nG "$USER" | grep -qw docker
   reset:
     linux: [sudo systemctl disable --now docker.service docker.socket]
 
@@ -98,6 +107,8 @@ fonts:
         curl -fLo /tmp/JetBrainsMono.zip https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip &&
         unzip -o /tmp/JetBrainsMono.zip -d ~/.local/share/fonts/JetBrainsMono &&
         rm /tmp/JetBrainsMono.zip && fc-cache -f; }
+  check:
+    linux: '[ -d ~/.local/share/fonts/JetBrainsMono ]'
   reset:
     linux: [rm -rf ~/.local/share/fonts/JetBrainsMono && fc-cache -f]
 
@@ -158,6 +169,8 @@ pass-cli:
         $script = Join-Path $env:TEMP 'pass-cli-install.ps1';
         Invoke-WebRequest -Uri https://proton.me/download/pass-cli/install.ps1 -OutFile $script;
         & $script"
+  check:
+    windows: if not exist "%USERPROFILE%\.local\bin\pass-cli.exe" exit 1
   upgrade:
     windows:
       - if exist "%USERPROFILE%\.local\bin\pass-cli.exe" pass-cli update
