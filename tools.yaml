@@ -190,6 +190,10 @@ fastfetch:
   linux: [fastfetch]
   windows: [fastfetch]
 
+btop:
+  macos: [btop]
+  linux: [btop]
+
 obsidian:
   macos: [obsidian]
   linux: [obsidian]
