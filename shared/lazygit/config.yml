@@ -1,0 +1,8 @@
+# lazygit config (cross-platform). Press | in a diff to cycle renderers.
+git:
+  diffRenderers:
+    - command: >-
+        delta --{{colorScheme}} --paging=never --line-numbers
+        --hyperlinks --hyperlinks-file-link-format="lazygit-edit://{path}:{line}"
+    - name: delta side-by-side
+      command: delta --{{colorScheme}} --paging=never --side-by-side --width={{width}}

@@ -83,6 +83,20 @@
       if: 'cmd /c exit 0'
       create: true
 
+    # lazygit (cross-platform, each OS has its own config dir)
+    ~/.config/lazygit/config.yml:
+      path: shared/lazygit/config.yml
+      if: '[ "$(uname)" = "Linux" ]'
+      create: true
+    ~/Library/Application Support/lazygit/config.yml:
+      path: shared/lazygit/config.yml
+      if: '[ "$(uname)" = "Darwin" ]'
+      create: true
+    ~/AppData/Local/lazygit/config.yml:
+      path: shared/lazygit/config.yml
+      if: 'cmd /c exit 0'
+      create: true
+
     # Node configs (cross-platform)
     ~/.npmrc:
       path: shared/node/.npmrc

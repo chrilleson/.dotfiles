@@ -159,6 +159,7 @@ eza:
   linux: [eza]
 
 lazygit:
+  links: [shared/lazygit]
   macos: [lazygit]
   linux: [lazygit]
   windows: [extras/lazygit]
