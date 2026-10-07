@@ -105,6 +105,36 @@ because they run on every install. Add a per-OS `check:` command that succeeds o
 | Docker | OrbStack | Docker | |
 | PowerShell 7, WezTerm | | | ✓ |
 
+## Tmux
+
+The prefix is `Ctrl+a`. Besides the usual splits, pane navigation and resizing (see
+`linux/tmux/tmux.conf` and `macos/tmux/tmux.conf`), there are two popups, adapted from
+[RaoH/dotfiles](https://github.com/RaoH/dotfiles/tree/main/tmux/.config/tmux). Their
+scripts live in `shared/tmux/` and are linked to `~/.config/tmux/scripts`.
+
+| Key | Action |
+|---|---|
+| `prefix o` | Session switcher (fzf popup) |
+| `prefix a` | Claude Code popup for the current pane's directory; press again inside to close it |
+| `prefix r` | Reload the tmux config |
+
+**Session switcher keys:**
+
+| Key | Action |
+|---|---|
+| `Enter` | Switch to the session or window; on a directory, open a session there; with no match, create a session named after the query |
+| `Ctrl+d` | Kill the session (the window, in window mode) |
+| `Ctrl+r` | Rename the session |
+| `Ctrl+w` | Windows in other sessions |
+| `Ctrl+p` | Projects: `~/dev/repositories/*/*` (set `TMUX_PROJECTS_DIR` to change) |
+| `Ctrl+z` | Zoxide directories |
+| `Ctrl+n` | Claude popup sessions (hidden from the main list) |
+| `Ctrl+b` / `Esc` | Back to sessions / close |
+
+**Claude popup:** each directory gets its own `claude-<dir>-<hash>` session, which keeps
+running after the popup closes. It won't open in `~` or in a directory that was deleted
+or moved, so Claude only starts in project directories.
+
 ## Layout
 
 ```
