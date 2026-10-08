@@ -23,14 +23,17 @@ tmux-dev() {
 
 # --- greeting: pending upgrades, from a count refreshed in the background ---
 # checkupdates (pacman-contrib) syncs a temp copy of the db, so no root is needed.
-# Refreshes at most every 6 hours; an offline check keeps the previous count.
+# Refreshes at most every 6 hours, or right after packages change (the local db
+# is newer than the count); an offline check keeps the previous count.
 os_greeting() {
   local cache=${XDG_CACHE_HOME:-$HOME/.cache}/dotfiles/updates
-  local -a mtime
+  local -a mtime dbtime
   zmodload zsh/datetime
   zmodload -F zsh/stat b:zstat
   zstat -A mtime +mtime -- $cache 2>/dev/null
-  if (( EPOCHSECONDS - ${mtime[1]:-0} > 6 * 3600 )) && (( $+commands[checkupdates] )); then
+  zstat -A dbtime +mtime -- /var/lib/pacman/local 2>/dev/null
+  local upgraded=$(( ${dbtime[1]:-0} > ${mtime[1]:-0} ))
+  if (( upgraded || EPOCHSECONDS - ${mtime[1]:-0} > 6 * 3600 )) && (( $+commands[checkupdates] )); then
     mkdir -p ${cache:h}
     touch $cache  # claim the refresh so other new shells don't start one too
     (
@@ -42,6 +45,7 @@ os_greeting() {
       print $#pkgs > $cache.tmp && mv $cache.tmp $cache
     ) &!
   fi
+  (( upgraded )) && return 0  # the cached count predates the last upgrade
   local n=$(<$cache 2>/dev/null)
   (( n > 0 )) && print -P "%F{yellow}↑%f $n package updates available: run %Bdotfiles upgrade --all%b"
   return 0
