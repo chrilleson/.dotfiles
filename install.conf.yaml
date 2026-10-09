@@ -97,6 +97,12 @@
       if: 'cmd /c exit 0'
       create: true
 
+    # btop (macOS and Linux)
+    ~/.config/btop/btop.conf:
+      path: shared/btop/btop.conf
+      if: '[ "$(uname)" = "Darwin" ] || [ "$(uname)" = "Linux" ]'
+      create: true
+
     # Node configs (cross-platform)
     ~/.npmrc:
       path: shared/node/.npmrc
