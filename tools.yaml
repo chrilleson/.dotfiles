@@ -168,6 +168,9 @@ gh:
   macos: [gh]
   linux: [github-cli]
 
+tea:
+  macos: [tea]
+
 # Proton Pass CLI. No Scoop package, so Windows uses the official script,
 # installed into ~/.local/bin (already on PATH via install.ps1).
 pass-cli:
