@@ -34,6 +34,12 @@ powershell:
 
 git:
   links: [shared/git]
+  # GNOME's ssh-agent (unlocks keys from the login keyring). Enabled so it starts
+  # with sockets.target, before Ghostty, which otherwise can miss SSH_AUTH_SOCK.
+  install:
+    linux: [systemctl --user enable --now gcr-ssh-agent.socket]
+  check:
+    linux: systemctl --user is-enabled -q gcr-ssh-agent.socket
 
 delta:
   macos: [git-delta]

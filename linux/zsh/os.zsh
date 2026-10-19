@@ -2,6 +2,11 @@
 ZSH_AUTOSUGGEST_PATH=/usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 ZSH_SYNTAX_HL_PATH=/usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
+# --- ssh-agent: fall back to GNOME's agent when the terminal started without it ---
+if [[ -z $SSH_AUTH_SOCK && -S $XDG_RUNTIME_DIR/gcr/ssh ]]; then
+  export SSH_AUTH_SOCK=$XDG_RUNTIME_DIR/gcr/ssh
+fi
+
 # --- Arch/pacman aliases ---
 alias update='sudo cachyos-rate-mirrors && sudo pacman -Syu'
 alias mirror='sudo cachyos-rate-mirrors'
