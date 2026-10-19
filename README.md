@@ -45,6 +45,7 @@ The installer links it to `~/.local/bin`, so it works from anywhere:
 dotfiles list                   # tools, and what's linked/installed
 dotfiles install [TOOL...]      # install packages and link configs
 dotfiles upgrade [TOOL...]      # upgrade installed packages
+dotfiles outdated               # outdated packages from tools.yaml (macOS)
 dotfiles reset [TOOL...]        # unlink configs and uninstall packages
 dotfiles link                   # re-create all symlinks
 dotfiles dotbot [--update]      # check for (or install) a newer vendored Dotbot

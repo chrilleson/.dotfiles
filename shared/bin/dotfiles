@@ -16,6 +16,7 @@
   dotfiles upgrade              pick outdated tools to upgrade interactively
   dotfiles upgrade TOOL...      upgrade specific tools (-n preview, -y no prompt)
   dotfiles upgrade --all        upgrade everything (on Arch: always the whole system)
+  dotfiles outdated             print outdated packages from tools.yaml, one per line (macOS)
 
 Tools are defined in tools.yaml; symlinks come from install.conf.yaml.
 Reset only removes symlinks that point into this repo, never real files.
@@ -168,10 +169,11 @@ def uninstall_packages(pkgs):
         subprocess.run([scoop(), "uninstall"] + names, check=True)
 
 
-def outdated_packages():
+def outdated_packages(quiet=False):
     """Names of outdated packages, or None when the package manager can't tell cheaply (Scoop)."""
     if OS == "macos":
-        print(f"{YELLOW}→{NC} Checking for updates (brew update)...")
+        if not quiet:
+            print(f"{YELLOW}→{NC} Checking for updates (brew update)...")
         subprocess.run(["brew", "update", "--quiet"], stdout=subprocess.DEVNULL)
         out = subprocess.run(["brew", "outdated", "--json=v2"], capture_output=True, text=True, check=True).stdout
         data = json.loads(out)
@@ -743,6 +745,19 @@ def cmd_list(args):
     return 0
 
 
+def cmd_outdated(args):
+    """Quiet, one package per line, for the shell greeting to count."""
+    outdated = outdated_packages(quiet=True) if OS == "macos" else None
+    if outdated is None:
+        sys.exit("error: outdated is only supported on macOS")
+    installed = installed_packages()
+    for tool in load_tools().values():
+        for p in tool.get(OS, []):
+            if is_installed(p, installed) and pkg_name(p) in outdated:
+                print(p)
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(prog="dotfiles", description="Install, link and reset this dotfiles repo.")
     sub = parser.add_subparsers(dest="command", metavar="COMMAND")
@@ -768,6 +783,7 @@ def main():
     p.add_argument("-y", "--yes", action="store_true", help="don't ask for confirmation")
     p.set_defaults(func=cmd_dotbot)
     sub.add_parser("list", help="show tools and what's linked/installed").set_defaults(func=cmd_list)
+    sub.add_parser("outdated", help="print outdated packages from tools.yaml (macOS)").set_defaults(func=cmd_outdated)
 
     args = parser.parse_args()
     if OS is None:
