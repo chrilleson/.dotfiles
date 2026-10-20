@@ -59,8 +59,59 @@ def load_yaml(name):
         return yaml.safe_load(f)
 
 
+LOCAL_FILE = "tools.local.yaml"
+local_names = set()  # tools that came from LOCAL_FILE, filled in by load_tools
+
+
+def load_tool_file(name):
+    try:
+        data = load_yaml(name)
+    except yaml.YAMLError as e:
+        sys.exit(f"error: {name} isn't valid YAML:\n{e}")
+    if data is None:
+        return {}
+    if not isinstance(data, dict) or not all(isinstance(t, dict) or t is None for t in data.values()):
+        sys.exit(f"error: {name} must map tool names to settings (see tools.yaml)")
+    return {str(name): tool or {} for name, tool in data.items()}
+
+
+def load_local_tools():
+    """Tools from the untracked LOCAL_FILE: none when it's missing, and always none on Windows."""
+    if OS == "windows" or not os.path.exists(os.path.join(REPO, LOCAL_FILE)):
+        return {}
+    tools = load_tool_file(LOCAL_FILE)
+    for name, tool in tools.items():
+        if "links" in tool:
+            sys.exit(f"error: {LOCAL_FILE}: {name} has links:, which only tools.yaml can have "
+                     f"(list its config files under config:, or `dotfiles promote {name}`)")
+    return tools
+
+
+def check_collisions(tracked, local):
+    """Local tools can't reuse a tracked tool's name, or a package it installs on the same OS."""
+    for name in local:
+        if name in tracked:
+            sys.exit(f"error: {name} is already in tools.yaml; remove it from {LOCAL_FILE} (or rename it)")
+    for os_name in ("macos", "linux", "windows"):
+        claimed = {pkg_name(p): name for name, tool in tracked.items() for p in tool.get(os_name, [])}
+        for name, tool in local.items():
+            for p in tool.get(os_name, []):
+                if pkg_name(p) in claimed:
+                    sys.exit(f"error: {p} ({os_name}) in {LOCAL_FILE} is already installed by "
+                             f"{claimed[pkg_name(p)]} in tools.yaml; remove it from {LOCAL_FILE}")
+
+
 def load_tools():
-    return {name: tool or {} for name, tool in load_yaml("tools.yaml").items()}
+    """Tools from tools.yaml, then the ones from LOCAL_FILE."""
+    tracked, local = load_tool_file("tools.yaml"), load_local_tools()
+    for name, tool in tracked.items():
+        if "config" in tool:
+            sys.exit(f"error: tools.yaml: {name} has config:, which only {LOCAL_FILE} can have "
+                     f"(tracked tools list their config under links:)")
+    check_collisions(tracked, local)
+    local_names.clear()
+    local_names.update(local)
+    return {**tracked, **local}
 
 
 def install_links():
@@ -440,7 +491,9 @@ def pick(plan, title):
     """Checkbox menu over plan steps; returns the chosen steps, or None if cancelled."""
     selected = [False] * len(plan)
     cursor, top, drawn = 0, 0, 0
-    height = max(3, min(len(plan), shutil.get_terminal_size().lines - 5))
+    # local tools come last, under their own heading (one more line to fit)
+    first_local = next((i for i, s in enumerate(plan) if s["name"] in local_names), None)
+    height = max(3, min(len(plan), shutil.get_terminal_size().lines - 5 - (first_local is not None)))
     width = max(len(s["name"]) for s in plan)
 
     def draw():
@@ -451,6 +504,8 @@ def pick(plan, title):
             DIM + fit("↑/↓ move · space toggle · a all · enter confirm · q quit", cols) + NC,
         ]
         for i in range(top, min(top + height, len(plan))):
+            if i == first_local:
+                lines.append(DIM + fit(f"  local ({LOCAL_FILE})", cols) + NC)
             mark = f"{GREEN}[x]{NC}" if selected[i] else "[ ]"
             pointer = f"{BLUE}>{NC}" if i == cursor else " "
             name = fit(plan[i]["name"], cols - 6).ljust(width)
@@ -732,16 +787,24 @@ def cmd_list(args):
     installed = installed_packages()
     width = max(len(n) for n in tools)
     print(f"{DIM}{'TOOL':<{width}}  LINKED  PACKAGES{NC}")
+    heading = False
     for name, tool in tools.items():
         mine = unique([l for l in tool_links(tool, links) if applies(l)])
         pkgs = tool.get(OS, [])
         if not mine and not pkgs and not (tool.get("install") or {}).get(OS):
             continue  # nothing for this OS
+        if name in local_names and not heading:
+            print(f"\n{DIM}local ({LOCAL_FILE}){NC}")
+            heading = True
         linked = f"{sum(1 for l in mine if owned(l))}/{len(mine)}" if mine else "-"
         shown = " ".join(
             f"{GREEN}{p}{NC}" if is_installed(p, installed) else f"{DIM}{p} (not installed){NC}" for p in pkgs
         )
         print(f"{name:<{width}}  {linked:<6}  {shown or '-'}")
+        # where the tool's config lives: its link destinations, or a local tool's config: paths
+        config = [l["key"] for l in mine] + tool.get("config", [])
+        if config:
+            print(f"{'':<{width}}  {DIM}config  {' '.join(config)}{NC}")
     return 0
 
 
