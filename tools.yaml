@@ -1,6 +1,11 @@
 # Tools the `dotfiles` command installs and resets.
 #
-# This is the only package list: the install scripts run `dotfiles install --all`.
+# This is the only tracked package list: the install scripts run `dotfiles install --all`.
+#
+# Tools for one machine only go in tools.local.yaml next to this file (gitignored, macOS
+# and Linux). It takes the same settings, minus links:, plus config: (the tool's config
+# files as home paths, which `dotfiles promote` moves into the repo). `dotfiles add`
+# writes it; every other command treats its tools like these.
 #
 # Each tool lists:
 #   links:                 repo paths whose links (from install.conf.yaml) belong to this tool

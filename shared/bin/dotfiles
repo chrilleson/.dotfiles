@@ -16,9 +16,14 @@
   dotfiles upgrade              pick outdated tools to upgrade interactively
   dotfiles upgrade TOOL...      upgrade specific tools (-n preview, -y no prompt)
   dotfiles upgrade --all        upgrade everything (on Arch: always the whole system)
-  dotfiles outdated             print outdated packages from tools.yaml, one per line (macOS)
+  dotfiles outdated             print outdated packages from the tools files, one per line (macOS)
+  dotfiles add NAME [PKG...]    add a tool to tools.local.yaml and install it (--tracked: tools.yaml)
+  dotfiles remove NAME          reset a tool and delete its entry (--purge: and its repo config)
+  dotfiles adopt NAME PATH...   move a tracked tool's config from ~ into the repo and link it
+  dotfiles promote NAME         move a local tool to tools.yaml and adopt its config:
 
-Tools are defined in tools.yaml; symlinks come from install.conf.yaml.
+Tools are defined in tools.yaml, plus tools.local.yaml for this machine only (gitignored,
+macOS and Linux); symlinks come from install.conf.yaml.
 Reset only removes symlinks that point into this repo, never real files.
 On Windows, ~/.local/bin/dotfiles.cmd runs this through Python.
 """
@@ -59,8 +64,59 @@ def load_yaml(name):
         return yaml.safe_load(f)
 
 
+LOCAL_FILE = "tools.local.yaml"
+local_names = set()  # tools that came from LOCAL_FILE, filled in by load_tools
+
+
+def load_tool_file(name):
+    try:
+        data = load_yaml(name)
+    except yaml.YAMLError as e:
+        sys.exit(f"error: {name} isn't valid YAML:\n{e}")
+    if data is None:
+        return {}
+    if not isinstance(data, dict) or not all(isinstance(t, dict) or t is None for t in data.values()):
+        sys.exit(f"error: {name} must map tool names to settings (see tools.yaml)")
+    return {str(name): tool or {} for name, tool in data.items()}
+
+
+def load_local_tools():
+    """Tools from the untracked LOCAL_FILE: none when it's missing, and always none on Windows."""
+    if OS == "windows" or not os.path.exists(os.path.join(REPO, LOCAL_FILE)):
+        return {}
+    tools = load_tool_file(LOCAL_FILE)
+    for name, tool in tools.items():
+        if "links" in tool:
+            sys.exit(f"error: {LOCAL_FILE}: {name} has links:, which only tools.yaml can have "
+                     f"(list its config files under config:, or `dotfiles promote {name}`)")
+    return tools
+
+
+def check_collisions(tracked, local, fix=f"; remove it from {LOCAL_FILE}"):
+    """Local tools can't reuse a tracked tool's name, or a package it installs on the same OS."""
+    for name in local:
+        if name in tracked:
+            sys.exit(f"error: {name} is already in tools.yaml{fix} (or rename it)")
+    for os_name in ("macos", "linux", "windows"):
+        claimed = {pkg_name(p): name for name, tool in tracked.items() for p in tool.get(os_name, [])}
+        for name, tool in local.items():
+            for p in tool.get(os_name, []):
+                if pkg_name(p) in claimed:
+                    sys.exit(f"error: {p} ({os_name}) is already installed by "
+                             f"{claimed[pkg_name(p)]} in tools.yaml{fix}")
+
+
 def load_tools():
-    return {name: tool or {} for name, tool in load_yaml("tools.yaml").items()}
+    """Tools from tools.yaml, then the ones from LOCAL_FILE."""
+    tracked, local = load_tool_file("tools.yaml"), load_local_tools()
+    for name, tool in tracked.items():
+        if "config" in tool:
+            sys.exit(f"error: tools.yaml: {name} has config:, which only {LOCAL_FILE} can have "
+                     f"(tracked tools list their config under links:)")
+    check_collisions(tracked, local)
+    local_names.clear()
+    local_names.update(local)
+    return {**tracked, **local}
 
 
 def install_links():
@@ -440,7 +496,9 @@ def pick(plan, title):
     """Checkbox menu over plan steps; returns the chosen steps, or None if cancelled."""
     selected = [False] * len(plan)
     cursor, top, drawn = 0, 0, 0
-    height = max(3, min(len(plan), shutil.get_terminal_size().lines - 5))
+    # local tools come last, under their own heading (one more line to fit)
+    first_local = next((i for i, s in enumerate(plan) if s["name"] in local_names), None)
+    height = max(3, min(len(plan), shutil.get_terminal_size().lines - 5 - (first_local is not None)))
     width = max(len(s["name"]) for s in plan)
 
     def draw():
@@ -451,6 +509,8 @@ def pick(plan, title):
             DIM + fit("↑/↓ move · space toggle · a all · enter confirm · q quit", cols) + NC,
         ]
         for i in range(top, min(top + height, len(plan))):
+            if i == first_local:
+                lines.append(DIM + fit(f"  local ({LOCAL_FILE})", cols) + NC)
             mark = f"{GREEN}[x]{NC}" if selected[i] else "[ ]"
             pointer = f"{BLUE}>{NC}" if i == cursor else " "
             name = fit(plan[i]["name"], cols - 6).ljust(width)
@@ -485,6 +545,285 @@ def pick(plan, title):
     finally:
         sys.stdout.write("\033[?25h")  # show cursor
         sys.stdout.flush()
+
+
+# --- editing tool files --------------------------------------------------------------
+#
+# PyYAML would drop comments, so these edit tools.yaml and LOCAL_FILE as text: each
+# tool is an unindented key that runs until the next unindented line, and the comment
+# lines right above it belong to it.
+
+LOCAL_HEADER = """\
+# Tools for this machine only: untracked, and read by `dotfiles` on macOS and Linux.
+# Same settings as tools.yaml, minus links:, plus config: (this tool's config files as
+# home paths; `dotfiles promote` moves them into the repo and links them).
+"""
+
+
+def read_text(name):
+    path = os.path.join(REPO, name)
+    if not os.path.exists(path):
+        return ""
+    with open(path) as f:
+        return f.read()
+
+
+def write_text(name, text):
+    with open(os.path.join(REPO, name), "w") as f:
+        f.write(text)
+
+
+def flow(items):
+    """A one-line YAML list, quoting only what needs it."""
+    return yaml.safe_dump(list(items), default_flow_style=True, width=float("inf")).strip()
+
+
+def block_span(lines, name):
+    """(start, end) of a tool's lines, including the comments right above it, or None."""
+    key = re.compile(rf"""^["']?{re.escape(name)}["']?\s*:""")
+    for i, line in enumerate(lines):
+        if key.match(line):
+            end = i + 1
+            while end < len(lines) and (not lines[end].strip() or lines[end][0] in " \t"):
+                end += 1
+            while not lines[end - 1].strip():
+                end -= 1
+            start = i
+            while start > 0 and lines[start - 1].startswith("#"):
+                start -= 1
+            return start, end
+    return None
+
+
+def get_block(text, name):
+    lines = text.splitlines()
+    start, end = block_span(lines, name)
+    return "\n".join(lines[start:end])
+
+
+def remove_block(text, name):
+    lines = text.splitlines()
+    start, end = block_span(lines, name)
+    del lines[start:end]
+    if start < len(lines) and not lines[start].strip() and (start == 0 or not lines[start - 1].strip()):
+        del lines[start]  # the blank line that separated it
+    while lines and not lines[-1].strip():
+        lines.pop()
+    return "\n".join(lines) + "\n" if lines else ""
+
+
+def append_block(text, block):
+    return (text.rstrip("\n") + "\n\n" if text.strip() else "") + block + "\n"
+
+
+def set_key(block, key, values):
+    """Set (or with no values, drop) one of a tool block's lists, keeping the rest as written."""
+    lines = block.split("\n")
+    at = next((i for i, l in enumerate(lines) if re.match(rf"  {key}\s*:", l)), None)
+    if at is not None:
+        end = at + 1
+        while end < len(lines) and (lines[end].startswith("   ") or lines[end].startswith("  - ")):
+            end += 1
+        del lines[at:end]
+    if values:
+        lines.insert(len(lines) if at is None else at, f"  {key}: {flow(values)}")
+    return "\n".join(lines)
+
+
+def tool_block(name, packages, config=None):
+    lines = [f"{name}:"]
+    lines += [f"  {os_name}: {flow(pkgs)}" for os_name, pkgs in packages.items() if pkgs]
+    if config:
+        lines.append(f"  config: {flow(config)}")
+    return "\n".join(lines)
+
+
+def home_path(path):
+    """path as ~/..., the way tools files and install.conf.yaml write it."""
+    path = os.path.abspath(os.path.expanduser(path))
+    home = os.path.expanduser("~")
+    return "~" + path[len(home):] if path == home or path.startswith(home + os.sep) else path
+
+
+def config_guesses(name):
+    """Config paths that exist under the usual names for a tool."""
+    guesses = [f"~/.config/{name}", f"~/.{name}", f"~/.{name}rc"]
+    if OS == "macos":
+        guesses.append(f"~/Library/Application Support/{name}")
+    return [g for g in guesses if os.path.exists(os.path.expanduser(g))]
+
+
+def no_windows(command):
+    if OS == "windows":
+        sys.exit(f"error: `dotfiles {command}` isn't supported on Windows yet")
+
+
+def split_tools(tools):
+    return ({n: t for n, t in tools.items() if n not in local_names},
+            {n: t for n, t in tools.items() if n in local_names})
+
+
+def commit_hint(paths):
+    print(f"\nReview, then commit: git add {' '.join(paths)}")
+
+
+def replace_block(text, name, block):
+    lines = text.splitlines()
+    start, end = block_span(lines, name)
+    lines[start:end] = block.split("\n")
+    return "\n".join(lines) + "\n"
+
+
+# --- adopting config into the repo ------------------------------------------------------
+#
+# Adopting moves a tool's config files from ~ into shared/TOOL (or macos/TOOL, linux/TOOL),
+# adds their links to install.conf.yaml and the tool's links:, and links them back.
+
+ONLY_IF = {"macos": '[ "$(uname)" = "Darwin" ]', "linux": '[ "$(uname)" = "Linux" ]'}
+UNIX_IF = '[ "$(uname)" = "Darwin" ] || [ "$(uname)" = "Linux" ]'  # adopting isn't supported on Windows
+
+
+class Changes:
+    """File writes, moves and links that are all undone if a later step fails."""
+
+    def __init__(self):
+        self.texts, self.moves, self.dirs, self.links = {}, [], [], []
+
+    def write(self, name, text):
+        if name not in self.texts:
+            self.texts[name] = read_text(name) if os.path.exists(os.path.join(REPO, name)) else None
+        write_text(name, text)
+
+    def move(self, src, dst):
+        parent = os.path.dirname(dst)
+        if not os.path.isdir(parent):
+            os.makedirs(parent)
+            self.dirs.append(parent)
+        shutil.move(src, dst)
+        self.moves.append((src, dst))
+
+    def link(self, links):
+        self.links += links
+        link_only(links)
+
+    def undo(self):
+        for link in self.links:
+            if os.path.islink(link["dest"]):
+                unlink(link["dest"])
+        for src, dst in reversed(self.moves):
+            shutil.move(dst, src)
+        for parent in reversed(self.dirs):
+            shutil.rmtree(parent, ignore_errors=True)
+        for name, text in self.texts.items():
+            if text is None:
+                os.remove(os.path.join(REPO, name))
+            else:
+                write_text(name, text)
+
+
+def scalar(value):
+    """value as a YAML scalar, quoted only when it needs to be."""
+    return flow([value])[1:-1]
+
+
+def adopt_entries(name, paths, os_specific):
+    """Where each config path goes in the repo, after checking it can be moved there."""
+    base = f"{OS}/{name}" if os_specific else f"shared/{name}"
+    taken = {l["dest"] for l in install_links()}
+    entries, errors = [], []
+    for path in dict.fromkeys(home_path(p) for p in paths):
+        dest = os.path.expanduser(path)
+        source = f"{base}/{os.path.basename(dest)}"
+        if not path.startswith("~/"):
+            errors.append(f"{path} isn't in your home directory")
+        elif os.path.islink(dest):
+            errors.append(f"{path} is already a symlink")
+        elif not os.path.exists(dest):
+            errors.append(f"{path} doesn't exist")
+        elif dest in taken:
+            errors.append(f"{path} is already linked by install.conf.yaml")
+        elif os.path.lexists(os.path.join(REPO, source)) or any(e["source"] == source for e in entries):
+            errors.append(f"{source} already exists in the repo")
+        else:
+            cond = ONLY_IF[OS] if os_specific or path.startswith("~/Library/") else UNIX_IF
+            spec = {"path": source, "if": cond, "create": True}
+            entries.append({"key": path, "dest": dest, "source": source, "spec": spec, "if": cond})
+    if errors:
+        sys.exit("error: can't adopt:\n  " + "\n  ".join(errors))
+    return base, entries
+
+
+def print_adopt(base, entries):
+    print(f"{BLUE}adopt into {base}{NC}")
+    for e in entries:
+        print(f"  move       {e['key']} → {e['source']}")
+        if os.path.isdir(e["dest"]):  # show everything that would end up in the repo
+            for root, dirs, files in os.walk(e["dest"]):
+                dirs.sort()
+                for f in sorted(files):
+                    print(f"  {DIM}             {os.path.relpath(os.path.join(root, f), e['dest'])}{NC}")
+        print(f"  link       {e['key']}")
+
+
+def add_link_entries(text, name, entries):
+    """Add links to install.conf.yaml, under the tool's own `# NAME` link block."""
+    new = []
+    for e in entries:
+        new += [f"    {scalar(e['key'])}:", f"      path: {scalar(e['source'])}",
+                f"      if: '{e['if']}'", "      create: true"]
+    lines = text.splitlines()
+    for i in range(len(lines) - 1):
+        if lines[i] == f"# {name}" and lines[i + 1] == "- link:":
+            end = i + 2
+            while end < len(lines) and (not lines[end].strip() or lines[end].startswith(" ")):
+                end += 1
+            while not lines[end - 1].strip():
+                end -= 1
+            lines[end:end] = new
+            return "\n".join(lines) + "\n"
+    return append_block(text, "\n".join([f"# {name}", "- link:"] + new))
+
+
+def remove_link_entries(text, sources):
+    """Drop the install.conf.yaml links whose source is under one of sources."""
+    lines = text.splitlines()
+    out, i = [], 0
+    while i < len(lines):
+        line = lines[i]
+        if re.match(r"    [^ #]", line):  # a link entry: its key line plus everything indented deeper
+            end = i + 1
+            while end < len(lines) and lines[end].startswith("     "):
+                end += 1
+            spec = yaml.safe_load("\n".join(l[4:] for l in lines[i:end]))
+            value = next(iter(spec.values()))
+            source = value.get("path") if isinstance(value, dict) else value
+            if under(str(source), sources):
+                # its comment goes too, unless it heads links that stay
+                rest = next((l for l in lines[end:] if l.strip()), "")
+                if not re.match(r"    [^ #]", rest):
+                    while out and out[-1].startswith("    #"):
+                        out.pop()
+                i = end
+                continue
+        out.append(line)
+        i += 1
+    # drop `- link:` blocks that are now empty, with their comment
+    text = "\n".join(out) + "\n"
+    text = re.sub(r"(?m)^(#[^\n]*\n)*- link:\n(?=\n*([^ \n]|\Z))", "", text)
+    return re.sub(r"\n{3,}", "\n\n", text).rstrip("\n") + "\n"
+
+
+def adopt(changes, name, base, entries):
+    """Move entries into the repo and link them, for a tool in tools.yaml (written through changes)."""
+    text = read_text("tools.yaml")
+    links = load_tool_file("tools.yaml")[name].get("links", [])
+    if not under(base, links):
+        changes.write("tools.yaml", replace_block(text, name, set_key(get_block(text, name), "links", links + [base])))
+    changes.write("install.conf.yaml", add_link_entries(read_text("install.conf.yaml"), name, entries))
+    for e in entries:
+        changes.move(e["dest"], os.path.join(REPO, e["source"]))
+    print(f"{YELLOW}→{NC} Linking {name}'s config...")
+    changes.link(entries)
 
 
 # --- commands ------------------------------------------------------------------------
@@ -587,6 +926,192 @@ def cmd_upgrade(args):
     if not proceed(args):
         return 0 if args.dry_run else 1
     return report(execute_upgrade(plan), "Upgrade complete")
+
+
+def ask_config(name, args):
+    """Config paths for a new tool: --config as given, or the guesses the user accepts."""
+    if args.config is not None:
+        missing = [p for p in args.config if not os.path.exists(os.path.expanduser(p))]
+        if missing:
+            sys.exit(f"error: no such file or directory: {', '.join(missing)}")
+        return list(dict.fromkeys(home_path(p) for p in args.config))
+    guesses = config_guesses(name)
+    if args.dry_run:
+        for g in guesses:
+            print(f"{DIM}found {g}, would ask whether it's {name}'s config{NC}")
+    if args.yes or args.dry_run or not sys.stdin.isatty():
+        return []  # never record a guess without asking
+    return [g for g in guesses if confirm(f"Is {g} {name}'s config? [y/N] ")]
+
+
+def cmd_add(args):
+    no_windows("add")
+    tools = load_tools()
+    tracked, local = split_tools(tools)
+    name = args.name
+    if not re.fullmatch(r"[A-Za-z0-9][\w.+@-]*", name):
+        sys.exit(f"error: {name!r} isn't a valid tool name")
+    if name in tools:
+        sys.exit(f"error: {name} is already in {LOCAL_FILE if name in local else 'tools.yaml'}")
+
+    packages = {"macos": args.macos, "linux": args.linux, "windows": args.windows}
+    packages[OS] = args.packages + packages[OS]
+    if not any(packages.values()):
+        packages[OS] = [name]  # `dotfiles add jq` installs the package jq
+    tool = {k: v for k, v in packages.items() if v}
+    if args.tracked:
+        check_collisions({**tracked, name: tool}, local)
+    else:
+        check_collisions(tracked, {**local, name: tool}, fix="")
+
+    config = ask_config(name, args)
+    base, entries = adopt_entries(name, config, args.os) if args.tracked and config else (None, [])
+    file = "tools.yaml" if args.tracked else LOCAL_FILE
+    block = tool_block(name, packages, None if args.tracked else config)
+    plan = build_install_plan([name], {name: tool})
+
+    print(f"{BLUE}{file}{NC}\n  add        " + block.replace("\n", "\n             "))
+    if entries:
+        print_adopt(base, entries)
+    print_plan(plan)
+    if not proceed(args):
+        return 0 if args.dry_run else 1
+
+    changes = Changes()
+    try:
+        changes.write(file, append_block(read_text(file) or ("" if args.tracked else LOCAL_HEADER), block))
+        if entries:
+            adopt(changes, name, base, entries)
+    except (OSError, subprocess.CalledProcessError) as e:
+        changes.undo()
+        sys.exit(f"{RED}✗{NC} {e}; nothing was changed")
+    print(f"{GREEN}✓{NC} Added {name} to {file}")
+    failed = execute_install(plan, link_all=False) if plan else []
+    if args.tracked:
+        commit_hint([file] + (["install.conf.yaml", base] if entries else []))
+    return report(failed, f"{name} is ready")
+
+
+def cmd_remove(args):
+    no_windows("remove")
+    tools = load_tools()
+    name = args.name
+    if name not in tools:
+        sys.exit(f"error: unknown tool: {name} (see `dotfiles list`)")
+    file = LOCAL_FILE if name in local_names else "tools.yaml"
+    claimed = tools[name].get("links", [])
+    in_repo = [p for p in claimed if os.path.lexists(os.path.join(REPO, p))]
+    if args.purge and file == LOCAL_FILE:
+        sys.exit(f"error: {name} is a local tool, so there's nothing in the repo to purge")
+    if args.purge and claimed:
+        conf = remove_link_entries(read_text("install.conf.yaml"), claimed)
+        links = install_links()
+        keep = sum(1 for l in links if not under(l["source"], claimed))
+        if sum(len(d.get("link") or {}) for d in yaml.safe_load(conf)) != keep:  # removed exactly the tool's links?
+            sys.exit("error: couldn't work out which install.conf.yaml lines to remove; edit it by hand")
+
+    plan = build_reset_plan([name], tools)
+    print_plan(plan)
+    print(f"{BLUE}{file}{NC}\n  delete     {name}")
+    if args.purge:
+        for p in in_repo:
+            print(f"  delete     {p} {DIM}(the only copy once unlinked, unless it's committed){NC}")
+        if claimed:
+            print("  delete     its links in install.conf.yaml")
+    if not proceed(args):
+        return 0 if args.dry_run else 1
+
+    failed = execute_reset(plan)
+    if failed:
+        return report(failed, "")  # keep the entry so the reset can be retried
+    write_text(file, remove_block(read_text(file), name))
+    print(f"{GREEN}✓{NC} Removed {name} from {file}")
+    if args.purge and claimed:
+        write_text("install.conf.yaml", conf)
+        for p in in_repo:
+            path = os.path.join(REPO, p)
+            shutil.rmtree(path) if os.path.isdir(path) and not os.path.islink(path) else os.remove(path)
+        print(f"{GREEN}✓{NC} Deleted its config from the repo")
+    elif in_repo:
+        print(f"{YELLOW}!{NC} Its config is still in the repo: {', '.join(in_repo)} and install.conf.yaml "
+              f"(--purge deletes it)")
+    if file == "tools.yaml":
+        commit_hint([file] + (["install.conf.yaml"] + in_repo if args.purge and claimed else []))
+    return report([], f"{name} is removed")
+
+
+def cmd_adopt(args):
+    no_windows("adopt")
+    tools = load_tools()
+    name = args.name
+    if name not in tools:
+        sys.exit(f"error: unknown tool: {name} (see `dotfiles list`)")
+
+    if name in local_names:
+        # local tools stay out of the repo: just note where their config is
+        missing = [p for p in args.paths if not os.path.exists(os.path.expanduser(p))]
+        if missing:
+            sys.exit(f"error: no such file or directory: {', '.join(missing)}")
+        config = list(dict.fromkeys(tools[name].get("config", []) + [home_path(p) for p in args.paths]))
+        text = read_text(LOCAL_FILE)
+        block = set_key(get_block(text, name), "config", config)
+        print(f"{BLUE}{LOCAL_FILE}{NC}\n  config     {flow(config)}")
+        print(f"{DIM}{name} is local, so its config stays where it is until `dotfiles promote {name}`{NC}")
+        if not proceed(args):
+            return 0 if args.dry_run else 1
+        write_text(LOCAL_FILE, replace_block(text, name, block))
+        return report([], f"Noted {name}'s config")
+
+    base, entries = adopt_entries(name, args.paths, args.os)
+    print_adopt(base, entries)
+    if not proceed(args):
+        return 0 if args.dry_run else 1
+    changes = Changes()
+    try:
+        adopt(changes, name, base, entries)
+    except (OSError, subprocess.CalledProcessError) as e:
+        changes.undo()
+        sys.exit(f"{RED}✗{NC} {e}; nothing was changed")
+    commit_hint(["tools.yaml", "install.conf.yaml", base])
+    return report([], f"Adopted {name}'s config")
+
+
+def cmd_promote(args):
+    no_windows("promote")
+    tools = load_tools()
+    name = args.name
+    if name not in tools:
+        sys.exit(f"error: unknown tool: {name} (see `dotfiles list`)")
+    if name not in local_names:
+        sys.exit(f"error: {name} is already in tools.yaml")
+
+    config = tools[name].get("config", [])
+    paths = args.paths or config
+    base, entries = adopt_entries(name, paths, args.os) if paths else (None, [])
+    adopted = {e["key"] for e in entries}
+    left = [c for c in config if c not in adopted]
+    local_text = read_text(LOCAL_FILE)
+    block = set_key(get_block(local_text, name), "config", None)
+
+    print(f"{BLUE}tools.yaml{NC}\n  move       {name} from {LOCAL_FILE}")
+    if entries:
+        print_adopt(base, entries)
+    if left:
+        print(f"{YELLOW}!{NC} Not adopting {', '.join(left)}: it stays where it is and drops out of config:")
+    if not proceed(args):
+        return 0 if args.dry_run else 1
+
+    changes = Changes()
+    try:
+        changes.write("tools.yaml", append_block(read_text("tools.yaml"), block))
+        changes.write(LOCAL_FILE, remove_block(local_text, name))
+        if entries:
+            adopt(changes, name, base, entries)
+    except (OSError, subprocess.CalledProcessError) as e:
+        changes.undo()
+        sys.exit(f"{RED}✗{NC} {e}; nothing was changed")
+    commit_hint(["tools.yaml"] + (["install.conf.yaml", base] if entries else []))
+    return report([], f"{name} is now in tools.yaml")
 
 
 # --- vendored dotbot ----------------------------------------------------------------
@@ -732,16 +1257,24 @@ def cmd_list(args):
     installed = installed_packages()
     width = max(len(n) for n in tools)
     print(f"{DIM}{'TOOL':<{width}}  LINKED  PACKAGES{NC}")
+    heading = False
     for name, tool in tools.items():
         mine = unique([l for l in tool_links(tool, links) if applies(l)])
         pkgs = tool.get(OS, [])
         if not mine and not pkgs and not (tool.get("install") or {}).get(OS):
             continue  # nothing for this OS
+        if name in local_names and not heading:
+            print(f"\n{DIM}local ({LOCAL_FILE}){NC}")
+            heading = True
         linked = f"{sum(1 for l in mine if owned(l))}/{len(mine)}" if mine else "-"
         shown = " ".join(
             f"{GREEN}{p}{NC}" if is_installed(p, installed) else f"{DIM}{p} (not installed){NC}" for p in pkgs
         )
         print(f"{name:<{width}}  {linked:<6}  {shown or '-'}")
+        # where the tool's config lives: its link destinations, or a local tool's config: paths
+        config = [l["key"] for l in mine] + tool.get("config", [])
+        if config:
+            print(f"{'':<{width}}  {DIM}config  {' '.join(config)}{NC}")
     return 0
 
 
@@ -774,6 +1307,43 @@ def main():
         p.add_argument("-y", "--yes", action="store_true", help="don't ask for confirmation")
         p.set_defaults(func=func)
 
+    p = sub.add_parser("add", help=f"add a tool to {LOCAL_FILE} (or tools.yaml) and install it")
+    p.add_argument("name", metavar="NAME", help="tool name")
+    p.add_argument("packages", nargs="*", metavar="PKG", help="packages for this OS (default: NAME)")
+    for os_name in ("macos", "linux", "windows"):
+        p.add_argument(f"--{os_name}", nargs="+", action="extend", default=[], metavar="PKG",
+                       help=f"packages for {os_name}")
+    p.add_argument("--config", nargs="+", action="extend", metavar="PATH",
+                   help="the tool's config files (default: ask about the usual places)")
+    p.add_argument("--tracked", action="store_true", help=f"add it to tools.yaml instead of {LOCAL_FILE}")
+    p.add_argument("--os", action="store_true", help="with --tracked, keep its config under this OS's folder")
+    p.add_argument("-n", "--dry-run", action="store_true", help="show what would happen, change nothing")
+    p.add_argument("-y", "--yes", action="store_true", help="don't ask for confirmation")
+    p.set_defaults(func=cmd_add)
+
+    p = sub.add_parser("remove", help="reset a tool and delete it from its tools file")
+    p.add_argument("name", metavar="NAME", help="tool name")
+    p.add_argument("--purge", action="store_true", help="also delete a tracked tool's config from the repo")
+    p.add_argument("-n", "--dry-run", action="store_true", help="show what would happen, change nothing")
+    p.add_argument("-y", "--yes", action="store_true", help="don't ask for confirmation")
+    p.set_defaults(func=cmd_remove)
+
+    p = sub.add_parser("adopt", help="move a tool's config into the repo and link it")
+    p.add_argument("name", metavar="NAME", help="tool name")
+    p.add_argument("paths", nargs="+", metavar="PATH", help="config files or directories in ~")
+    p.add_argument("--os", action="store_true", help="put it under this OS's folder instead of shared/")
+    p.add_argument("-n", "--dry-run", action="store_true", help="show what would happen, change nothing")
+    p.add_argument("-y", "--yes", action="store_true", help="don't ask for confirmation")
+    p.set_defaults(func=cmd_adopt)
+
+    p = sub.add_parser("promote", help=f"move a tool from {LOCAL_FILE} to tools.yaml, adopting its config")
+    p.add_argument("name", metavar="NAME", help="tool name")
+    p.add_argument("paths", nargs="*", metavar="PATH", help="config to adopt (default: its config:)")
+    p.add_argument("--os", action="store_true", help="put its config under this OS's folder instead of shared/")
+    p.add_argument("-n", "--dry-run", action="store_true", help="show what would happen, change nothing")
+    p.add_argument("-y", "--yes", action="store_true", help="don't ask for confirmation")
+    p.set_defaults(func=cmd_promote)
+
     sub.add_parser("link", help="re-run dotbot to (re)create all symlinks").set_defaults(func=cmd_link)
 
     p = sub.add_parser("dotbot", help="check, update or pin the vendored Dotbot version")
@@ -783,7 +1353,7 @@ def main():
     p.add_argument("-y", "--yes", action="store_true", help="don't ask for confirmation")
     p.set_defaults(func=cmd_dotbot)
     sub.add_parser("list", help="show tools and what's linked/installed").set_defaults(func=cmd_list)
-    sub.add_parser("outdated", help="print outdated packages from tools.yaml (macOS)").set_defaults(func=cmd_outdated)
+    sub.add_parser("outdated", help="print outdated packages from the tools files (macOS)").set_defaults(func=cmd_outdated)
 
     args = parser.parse_args()
     if OS is None:
