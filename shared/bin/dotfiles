@@ -16,9 +16,14 @@
   dotfiles upgrade              pick outdated tools to upgrade interactively
   dotfiles upgrade TOOL...      upgrade specific tools (-n preview, -y no prompt)
   dotfiles upgrade --all        upgrade everything (on Arch: always the whole system)
-  dotfiles outdated             print outdated packages from tools.yaml, one per line (macOS)
+  dotfiles outdated             print outdated packages from the tools files, one per line (macOS)
+  dotfiles add NAME [PKG...]    add a tool to tools.local.yaml and install it (--tracked: tools.yaml)
+  dotfiles remove NAME          reset a tool and delete its entry (--purge: and its repo config)
+  dotfiles adopt NAME PATH...   move a tracked tool's config from ~ into the repo and link it
+  dotfiles promote NAME         move a local tool to tools.yaml and adopt its config:
 
-Tools are defined in tools.yaml; symlinks come from install.conf.yaml.
+Tools are defined in tools.yaml, plus tools.local.yaml for this machine only (gitignored,
+macOS and Linux); symlinks come from install.conf.yaml.
 Reset only removes symlinks that point into this repo, never real files.
 On Windows, ~/.local/bin/dotfiles.cmd runs this through Python.
 """
@@ -97,7 +102,8 @@ def check_collisions(tracked, local, fix=f"; remove it from {LOCAL_FILE}"):
         for name, tool in local.items():
             for p in tool.get(os_name, []):
                 if pkg_name(p) in claimed:
-                    sys.exit(f"error: {p} ({os_name}) is already installed by {claimed[pkg_name(p)]} in tools.yaml{fix}")
+                    sys.exit(f"error: {p} ({os_name}) is already installed by "
+                             f"{claimed[pkg_name(p)]} in tools.yaml{fix}")
 
 
 def load_tools():
@@ -1347,7 +1353,7 @@ def main():
     p.add_argument("-y", "--yes", action="store_true", help="don't ask for confirmation")
     p.set_defaults(func=cmd_dotbot)
     sub.add_parser("list", help="show tools and what's linked/installed").set_defaults(func=cmd_list)
-    sub.add_parser("outdated", help="print outdated packages from tools.yaml (macOS)").set_defaults(func=cmd_outdated)
+    sub.add_parser("outdated", help="print outdated packages from the tools files (macOS)").set_defaults(func=cmd_outdated)
 
     args = parser.parse_args()
     if OS is None:

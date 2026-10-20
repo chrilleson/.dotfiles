@@ -45,8 +45,12 @@ The installer links it to `~/.local/bin`, so it works from anywhere:
 dotfiles list                   # tools, and what's linked/installed
 dotfiles install [TOOL...]      # install packages and link configs
 dotfiles upgrade [TOOL...]      # upgrade installed packages
-dotfiles outdated               # outdated packages from tools.yaml (macOS)
+dotfiles outdated               # outdated packages from the tools files (macOS)
 dotfiles reset [TOOL...]        # unlink configs and uninstall packages
+dotfiles add NAME [PKG...]      # add a tool to tools.local.yaml and install it
+dotfiles remove NAME            # reset a tool and delete its entry
+dotfiles adopt NAME PATH...     # move a tracked tool's config into the repo and link it
+dotfiles promote NAME           # move a local tool to tools.yaml, adopting its config
 dotfiles link                   # re-create all symlinks
 dotfiles dotbot [--update]      # check for (or install) a newer vendored Dotbot
 dotfiles dotbot 1.23.1          # pin Dotbot to a version (--list shows them)
@@ -92,10 +96,35 @@ fastfetch:
   ...
 ```
 
+**Or let `dotfiles` do it:** `dotfiles add fastfetch --tracked` writes the entry and
+installs it (`--macos/--linux/--windows PKG` for other OSes), and
+`dotfiles adopt fastfetch ~/.config/fastfetch` moves existing config into `shared/fastfetch/`
+(`--os` for the OS folder), links it, and updates both files. Neither commits.
+
 **Without a package:** use per-OS `install:`, `upgrade:` and `reset:` shell commands
 instead (see `fonts` and `pass-cli` in `tools.yaml`). Keep `install` commands idempotent,
 because they run on every install. Add a per-OS `check:` command that succeeds once the
 `install` commands are done, so `dotfiles install` skips them and the picker hides the tool.
+
+## Tools for one machine
+
+For a tool you only want on this machine (say, trying out Claude Code), use
+`tools.local.yaml` in the repo root. It's gitignored, works on macOS and Linux, and
+`install`, `upgrade`, `reset`, `list`, `outdated` and the greeting treat its tools like
+the ones in `tools.yaml` (`list` and the picker show them under their own heading).
+
+```bash
+dotfiles add claude-code --config ~/.claude/settings.json   # write it and install it
+dotfiles promote claude-code                                 # later: make it a go-to tool
+```
+
+It takes the same settings as `tools.yaml`, minus `links:`, plus `config:`: the tool's
+config files as home paths. They aren't linked; `list` shows them, and `promote` moves the
+entry to `tools.yaml` and adopts them into `shared/<tool>/`. Without `--config`, `add`
+suggests the usual places (`~/.config/<tool>`, `~/.<tool>`, ...) and asks first.
+A local tool can't reuse a tracked tool's name or packages; `dotfiles` stops and says so.
+`dotfiles remove <tool>` resets it and deletes the entry (`--purge` also deletes a tracked
+tool's config from the repo).
 
 ## What's Included
 
