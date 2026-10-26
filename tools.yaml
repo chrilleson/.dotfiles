@@ -107,6 +107,11 @@ docker:
 dotnet:
   linux: [dotnet-sdk]
 
+go:
+  macos: [go]
+  linux: [go]
+  windows: [go]
+
 fonts:
   macos: [font-jetbrains-mono-nerd-font]
   windows: [nerd-fonts/JetBrainsMono-NF]
