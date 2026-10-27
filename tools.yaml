@@ -128,6 +128,73 @@ fonts:
   reset:
     linux: [rm -rf ~/.local/share/fonts/JetBrainsMono && fc-cache -f]
 
+# macOS Tahoe look for GNOME; pick the themes in Tweaks. The GTK theme comes from
+# upstream's installer (the AUR package only builds the solid variant), whose -l also
+# themes libadwaita apps through ~/.config/gtk-4.0. Tweaks, Extension Manager and
+# User Themes come from the gnome tool, so resetting the theme keeps them.
+gnome:
+  linux:
+    - gnome-tweaks
+    - extension-manager
+    - gnome-shell-extensions              # User Themes, for the top bar and overview
+
+mactahoe:
+  linux:
+    - sassc
+    - papirus-icon-theme
+    - mactahoe-cursor-theme-git
+    - gnome-shell-extension-dash-to-dock
+    - gnome-shell-extension-blur-my-shell
+    - inter-font
+  install:
+    linux:
+      - >-
+        [ -d ~/.themes/MacTahoe-Dark ] || {
+        rm -rf /tmp/MacTahoe-gtk-theme &&
+        git clone --depth 1 https://github.com/vinceliuice/MacTahoe-gtk-theme /tmp/MacTahoe-gtk-theme &&
+        /tmp/MacTahoe-gtk-theme/install.sh -l &&
+        rm -rf /tmp/MacTahoe-gtk-theme; }
+      - gsettings set org.gnome.desktop.wm.preferences button-layout 'close,minimize,maximize:'
+      - gsettings set org.gnome.desktop.interface gtk-theme 'MacTahoe-Dark'
+      - gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark'
+      - gsettings set org.gnome.desktop.interface cursor-theme 'MacTahoe-cursors'
+      - gsettings set org.gnome.desktop.interface font-name 'Inter 11'
+      - gsettings set org.gnome.shell.extensions.user-theme name 'MacTahoe-Dark'
+      # Through gsettings, not `gnome-extensions enable`: the shell only sees newly
+      # installed extensions after a re-login, but this key takes effect then.
+      - >-
+        for e in user-theme@gnome-shell-extensions.gcampax.github.com dash-to-dock@micxgx.gmail.com blur-my-shell@aunetx; do
+        list=$(gsettings get org.gnome.shell enabled-extensions);
+        echo "$list" | grep -q "'$e'" ||
+        gsettings set org.gnome.shell enabled-extensions "$(echo "$list" | sed "s/]$/, '$e']/; s/\[, /[/")";
+        done
+  check:
+    linux: >-
+      [ -d ~/.themes/MacTahoe-Dark ] &&
+      [ "$(gsettings get org.gnome.desktop.wm.preferences button-layout)" = "'close,minimize,maximize:'" ] &&
+      [ "$(gsettings get org.gnome.desktop.interface gtk-theme)" = "'MacTahoe-Dark'" ] &&
+      [ "$(gsettings get org.gnome.desktop.interface icon-theme)" = "'Papirus-Dark'" ] &&
+      [ "$(gsettings get org.gnome.desktop.interface cursor-theme)" = "'MacTahoe-cursors'" ] &&
+      [ "$(gsettings get org.gnome.desktop.interface font-name)" = "'Inter 11'" ] &&
+      [ "$(gsettings get org.gnome.shell.extensions.user-theme name)" = "'MacTahoe-Dark'" ] &&
+      gsettings get org.gnome.shell enabled-extensions | grep -q "'blur-my-shell@aunetx'"
+  upgrade:
+    linux:
+      - >-
+        rm -rf /tmp/MacTahoe-gtk-theme &&
+        git clone --depth 1 https://github.com/vinceliuice/MacTahoe-gtk-theme /tmp/MacTahoe-gtk-theme &&
+        /tmp/MacTahoe-gtk-theme/install.sh -l &&
+        rm -rf /tmp/MacTahoe-gtk-theme
+  reset:
+    linux:
+      - rm -rf ~/.themes/MacTahoe* ~/.config/gtk-4.0/{gtk.css,gtk-dark.css,gtk-Light.css,gtk-Dark.css,assets,windows-assets}
+      - rm -f ~/.local/bin/gnome-theme-switcher ~/.local/share/applications/org.gnome.GTK4ThemeSwitcher.desktop
+      - gsettings reset org.gnome.desktop.wm.preferences button-layout
+      - >-
+        for k in gtk-theme icon-theme cursor-theme font-name; do
+        gsettings reset org.gnome.desktop.interface $k; done
+      - gsettings reset org.gnome.shell.extensions.user-theme name
+
 fzf:
   macos: [fzf]
   linux: [fzf]
