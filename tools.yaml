@@ -292,3 +292,15 @@ btop:
 obsidian:
   macos: [obsidian]
   linux: [obsidian]
+
+# Launcher (Raycast-like). On Linux its server runs as a user service and the hotkey
+# that runs `vicinae toggle` is set in GNOME's keyboard settings.
+vicinae:
+  macos: [vicinae]
+  linux: [vicinae-bin]
+  install:
+    linux: [systemctl --user enable --now vicinae]
+  check:
+    linux: systemctl --user is-enabled -q vicinae
+  reset:
+    linux: [systemctl --user disable --now vicinae]
