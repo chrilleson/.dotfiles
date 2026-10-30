@@ -293,14 +293,35 @@ obsidian:
   macos: [obsidian]
   linux: [obsidian]
 
-# Launcher (Raycast-like). On Linux its server runs as a user service and the hotkey
-# that runs `vicinae toggle` is set in GNOME's keyboard settings.
+# Launcher (Raycast-like). On Linux its server runs as a user service and a GNOME
+# custom shortcut (Ctrl+Shift+Space) runs `vicinae toggle`, since Wayland apps can't
+# grab global hotkeys themselves. The shortcut is appended to GNOME's list, so other
+# custom shortcuts survive.
 vicinae:
   macos: [vicinae]
   linux: [vicinae-bin]
   install:
-    linux: [systemctl --user enable --now vicinae]
+    linux:
+      - systemctl --user enable --now vicinae
+      - >-
+        kb=/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/vicinae/;
+        s=org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:$kb;
+        gsettings set $s name 'Vicinae' &&
+        gsettings set $s command 'vicinae toggle' &&
+        gsettings set $s binding '<Control><Shift>space' &&
+        list=$(gsettings get org.gnome.settings-daemon.plugins.media-keys custom-keybindings) &&
+        { echo "$list" | grep -q "'$kb'" ||
+        gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "$(echo "$list" | sed "s|]$|, '$kb']|; s|\[, |[|")"; }
   check:
-    linux: systemctl --user is-enabled -q vicinae
+    linux: >-
+      systemctl --user is-enabled -q vicinae &&
+      gsettings get org.gnome.settings-daemon.plugins.media-keys custom-keybindings | grep -q "/custom-keybindings/vicinae/'" &&
+      [ "$(gsettings get org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/vicinae/ binding)" = "'<Control><Shift>space'" ]
   reset:
-    linux: [systemctl --user disable --now vicinae]
+    linux:
+      - systemctl --user disable --now vicinae
+      - >-
+        kb=/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/vicinae/;
+        list=$(gsettings get org.gnome.settings-daemon.plugins.media-keys custom-keybindings);
+        gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "$(echo "$list" | sed "s|'$kb'||; s|, ,|,|; s|\[, |[|; s|, ]|]|")";
+        dconf reset -f $kb
