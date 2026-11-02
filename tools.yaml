@@ -26,7 +26,13 @@ dotfiles:
 zsh:
   links: [shared/zsh, linux/zsh, macos/zsh]
   macos: [zsh-autosuggestions, zsh-syntax-highlighting, zsh-completions]
-  linux: [zsh-autosuggestions, zsh-syntax-highlighting, zsh-completions, pacman-contrib]
+  linux:
+    [
+      zsh-autosuggestions,
+      zsh-syntax-highlighting,
+      zsh-completions,
+      pacman-contrib,
+    ]
 
 powershell:
   links: [windows/powershell]
@@ -124,7 +130,7 @@ fonts:
         unzip -o /tmp/JetBrainsMono.zip -d ~/.local/share/fonts/JetBrainsMono &&
         rm /tmp/JetBrainsMono.zip && fc-cache -f; }
   check:
-    linux: '[ -d ~/.local/share/fonts/JetBrainsMono ]'
+    linux: "[ -d ~/.local/share/fonts/JetBrainsMono ]"
   reset:
     linux: [rm -rf ~/.local/share/fonts/JetBrainsMono && fc-cache -f]
 
@@ -136,7 +142,7 @@ gnome:
   linux:
     - gnome-tweaks
     - extension-manager
-    - gnome-shell-extensions              # User Themes, for the top bar and overview
+    - gnome-shell-extensions # User Themes, for the top bar and overview
 
 mactahoe:
   linux:
