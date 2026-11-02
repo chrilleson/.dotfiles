@@ -331,3 +331,6 @@ vicinae:
         list=$(gsettings get org.gnome.settings-daemon.plugins.media-keys custom-keybindings);
         gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "$(echo "$list" | sed "s|'$kb'||; s|, ,|,|; s|\[, |[|; s|, ]|]|")";
         dconf reset -f $kb
+
+mouseless:
+  macos: [mouseless]
