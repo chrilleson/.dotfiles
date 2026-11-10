@@ -36,26 +36,6 @@ command -v fzf      >/dev/null && source <(fzf --zsh)
 command -v atuin    >/dev/null && eval "$(atuin init zsh --disable-up-arrow)"
 command -v pass-cli >/dev/null && source <(pass-cli completions zsh)
 
-# --- dev: open or attach to a tmux dev session for the current directory ---
-dev() {
-  # tmux rewrites "." and ":" in session names to "_", so sanitize up front
-  local session=${${PWD:t}//[.:]/_}
-
-  if ! tmux has-session -t "=$session" 2>/dev/null; then
-    tmux new-session -d -s "$session" -n editor
-    tmux new-window  -t "$session" -n server
-    tmux new-window  -t "$session" -n git
-    tmux new-window  -t "$session" -n misc
-    tmux select-window -t "$session:editor"
-  fi
-
-  if [[ -n $TMUX ]]; then
-    tmux switch-client -t "$session"
-  else
-    tmux attach -t "$session"
-  fi
-}
-
 # --- y: run yazi, then cd to the directory it was left in ---
 y() {
   local tmp cwd
