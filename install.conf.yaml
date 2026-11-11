@@ -28,6 +28,12 @@
       if: 'cmd /c exit 0'
       create: true
 
+    # wt: a git worktree per task, in a Rex (or tmux) session
+    ~/.local/bin/wt:
+      path: shared/bin/wt
+      if: '[ "$(uname)" = "Darwin" ] || [ "$(uname)" = "Linux" ]'
+      create: true
+
     # PowerShell 7 profile (Windows)
     ~/Documents/PowerShell/Microsoft.PowerShell_profile.ps1:
       path: windows/powershell/profile.ps1

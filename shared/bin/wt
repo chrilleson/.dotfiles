@@ -1,0 +1,241 @@
+#!/usr/bin/env bash
+# wt: one git worktree per task, each opened in its own Rex session (tmux without Rex),
+# with Claude Code beside a shell.
+#
+#   wt new [TITLE] [-r REPO]   create <workspace>/.worktrees/<repo>/<slug> on a new branch <slug>
+#   wt rm [SLUG] [-f]          remove a worktree (the current one without SLUG), its session,
+#                              and its branch if the PR was merged; -f skips the safety checks
+#   wt gc                      wt rm every worktree whose PR is merged
+#   wt ls                      list the worktrees
+#
+# A workspace is a folder of repos, e.g. ~/dev/repositories/personal. Its optional
+# .worktree-setup and .worktree-teardown scripts run in each new or removed worktree,
+# with WT_REPO, WT_MAIN (the main checkout), WT_WORKTREE, WT_BRANCH and WT_SLUG set.
+# WT_ROOTS lists the workspaces `wt new` picks repos from and `wt gc`/`wt ls` look in.
+set -euo pipefail
+
+WT_ROOTS=${WT_ROOTS:-"$HOME/dev/repositories/*"}
+SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+
+die() { echo "wt: $*" >&2; exit 1; }
+
+slugify() {
+  printf '%s' "$1" | tr '[:upper:]' '[:lower:]' |
+    sed -E 's/[^a-z0-9]+/-/g; s/^-+//' | cut -c1-40 | sed -E 's/-+$//'
+}
+
+# The main checkout of the repo DIR is in (also when DIR is one of its worktrees).
+main_checkout() {
+  local common
+  common=$(git -C "$1" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || return 1
+  dirname "$common"
+}
+
+# The session label: <repo>/<slug>, without the repo's leading dots (".dotfiles").
+label() { local repo=$1; while [[ $repo == .* ]]; do repo=${repo#.}; done; echo "$repo/$2"; }
+
+has_rex() { command -v rex >/dev/null && rex ls >/dev/null 2>&1; }
+
+# Every worktree wt made, as paths.
+all_worktrees() {
+  local root
+  for root in $WT_ROOTS; do
+    [ -d "$root/.worktrees" ] || continue
+    find "$root/.worktrees" -mindepth 2 -maxdepth 2 -type d
+  done
+}
+
+export_env() {  # MAIN WORKTREE
+  export WT_MAIN=$1 WT_WORKTREE=$2
+  export WT_REPO WT_SLUG WT_BRANCH
+  WT_REPO=$(basename "$1") WT_SLUG=$(basename "$2")
+  WT_BRANCH=$(git -C "$2" branch --show-current)
+}
+
+# Runs <workspace>/.worktree-NAME in the worktree, if the workspace has one.
+run_hook() {  # NAME MAIN WORKTREE
+  local hook
+  hook="$(dirname "$2")/.worktree-$1"
+  [ -f "$hook" ] || return 0
+  echo "wt: running $hook"
+  export_env "$2" "$3"
+  if [ -x "$hook" ]; then (cd "$3" && "$hook"); else (cd "$3" && bash "$hook"); fi
+}
+
+pick_repo() {
+  command -v fzf >/dev/null || die "not in a repo; pass -r REPO (or install fzf to pick one)"
+  local root d
+  for root in $WT_ROOTS; do
+    for d in "$root"/*/ "$root"/.[!.]*/; do
+      [ -e "$d.git" ] && [ "$(basename "$d")" != .worktrees ] && echo "${d%/}"
+    done
+  done | sed "s|^$HOME|~|" | fzf --prompt "Repo: " --height 40% --reverse | sed "s|^~|$HOME|"
+}
+
+find_repo() {  # NAME or path
+  [ -d "$1" ] && { main_checkout "$1"; return; }
+  local root
+  for root in $WT_ROOTS; do
+    [ -e "$root/$1/.git" ] && { echo "$root/$1"; return; }
+  done
+  die "no repo named $1 in $WT_ROOTS"
+}
+
+cmd_new() {
+  local title="" repo_arg="" main
+  while [ $# -gt 0 ]; do
+    case $1 in
+      -r) repo_arg=${2:?-r needs a repo}; shift 2 ;;
+      *) title="${title:+$title }$1"; shift ;;
+    esac
+  done
+
+  if [ -n "$repo_arg" ]; then main=$(find_repo "$repo_arg")
+  elif ! main=$(main_checkout .); then main=$(pick_repo)
+  fi
+  [ -n "$main" ] || exit 1
+  local repo ws; repo=$(basename "$main"); ws=$(dirname "$main")
+  echo "Repo: ${main/#$HOME/~}"
+
+  [ -n "$title" ] || read -rp "Task: " title
+  local slug; slug=$(slugify "$title")
+  [ -n "$slug" ] || die "the title needs a letter or digit"
+
+  local wt="$ws/.worktrees/$repo/$slug"
+  [ -e "$wt" ] && die "$wt already exists"
+  git -C "$main" show-ref --verify -q "refs/heads/$slug" && die "branch $slug already exists"
+
+  # Fork from origin's default branch (fresh), else whatever the main checkout is on.
+  git -C "$main" fetch -q origin 2>/dev/null || true
+  local base
+  base=$(git -C "$main" symbolic-ref -q --short refs/remotes/origin/HEAD) ||
+    base=$(git -C "$main" rev-parse --abbrev-ref HEAD)
+  mkdir -p "$(dirname "$wt")"
+  # --no-track: the branch shouldn't push to (or pull from) the base
+  git -C "$main" worktree add -q --no-track -b "$slug" "$wt" "$base"
+  echo "wt: $wt on $slug (from $base)"
+
+  open_session "$(label "$repo" "$slug")" "$wt"
+}
+
+# The task's session: Claude Code (after the setup) beside a shell.
+open_session() {  # LABEL WORKTREE
+  if has_rex; then
+    local created id block
+    created=$(rex new "$1" --cwd "$2" --json -- "$SELF" _start)
+    id=$(jq -r .session_id <<<"$created")
+    block=$(jq -r '.initial_windows[0].block_ids[0]' <<<"$created")
+    [[ $id == session:* && $block == block:* ]] || die "couldn't read the new Rex session: $created"
+    rex split -s "$id" -b "$block" --cwd "$2" --focus=false >/dev/null
+    # Switching the app over needs Remote Control (Rex Settings > Rex Server).
+    rex do session.select session_id="$id" >/dev/null 2>&1 ||
+      echo "wt: opened Rex session $1 (it's in the sidebar)"
+  elif command -v tmux >/dev/null; then
+    local name=${1//[.:]/_}
+    tmux new-session -d -s "$name" -c "$2" "$SELF _start"
+    tmux split-window -h -t "$name" -c "$2"
+    tmux select-pane -t "$name.0"
+    if [ -n "${TMUX:-}" ]; then tmux switch-client -t "$name"; else tmux attach -t "$name"; fi
+  else
+    echo "wt: no Rex or tmux; run: cd $2 && $SELF _start"
+  fi
+}
+
+# Runs in the task's session: setup, then Claude Code, then a shell. A failed setup
+# skips Claude and leaves the shell, to fix it by hand.
+cmd_start() {
+  local main; main=$(main_checkout .)
+  if run_hook setup "$main" "$PWD"; then
+    claude || true
+  else
+    echo "wt: setup failed; fix it here, then run claude"
+  fi
+  exec "${SHELL:-/bin/zsh}" -l
+}
+
+pr_state() { (cd "$1" && gh pr view "$2" --json state -q .state 2>/dev/null) || true; }
+
+remove() {  # WORKTREE FORCE
+  local wt=$1 force=$2 main branch repo merged=""
+  main=$(main_checkout "$wt") || die "$wt isn't a git worktree"
+  branch=$(git -C "$wt" branch --show-current)
+  repo=$(basename "$main")
+  [ "$wt" != "$main" ] || die "that's the main checkout, not a worktree"
+  command -v gh >/dev/null && [ "$(pr_state "$main" "$branch")" = MERGED ] && merged=1
+
+  if [ -z "$force" ]; then
+    [ -z "$(git -C "$wt" status --porcelain)" ] ||
+      die "$wt has uncommitted changes (-f to remove anyway)"
+    # Commits on no other branch or remote would be lost, unless the PR was merged
+    # (a squash merge leaves them behind, and the remote branch may be deleted).
+    [ -n "$merged" ] || [ -z "$(git -C "$main" rev-list -n1 "refs/heads/$branch" \
+      --not --exclude="$branch" --branches --remotes)" ] ||
+      die "$branch has commits that aren't pushed or merged (-f to remove anyway)"
+  fi
+
+  run_hook teardown "$main" "$wt" || echo "wt: teardown failed; removing anyway"
+  git -C "$main" worktree remove ${force:+--force} "$wt"
+  rmdir "$(dirname "$wt")" 2>/dev/null || true
+  if [ -n "$merged" ] || [ -n "$force" ]; then git -C "$main" branch -q -D "$branch"
+  else git -C "$main" branch -q -d "$branch" 2>/dev/null || echo "wt: kept branch $branch"
+  fi
+  echo "wt: removed $(label "$repo" "$(basename "$wt")")"
+
+  # Last, since wt may be running inside this session.
+  local name; name=$(label "$repo" "$(basename "$wt")")
+  if has_rex; then rex kill "$name" >/dev/null 2>&1 || true; fi
+  if command -v tmux >/dev/null; then tmux kill-session -t "=${name//[.:]/_}" 2>/dev/null || true; fi
+}
+
+cmd_rm() {
+  local slug="" force=""
+  while [ $# -gt 0 ]; do
+    case $1 in -f) force=1 ;; *) slug=$1 ;; esac; shift
+  done
+  local wt
+  if [ -n "$slug" ]; then
+    local main; main=$(main_checkout .) || die "run it in the repo, or without SLUG in the worktree"
+    wt="$(dirname "$main")/.worktrees/$(basename "$main")/$slug"
+  else
+    wt=$(git rev-parse --show-toplevel 2>/dev/null) || die "not in a worktree"
+  fi
+  [ -d "$wt" ] || die "no worktree at $wt"
+  [[ $wt == */.worktrees/*/* ]] || die "$wt wasn't made by wt"
+  remove "$wt" "$force"
+}
+
+cmd_gc() {
+  command -v gh >/dev/null || die "gc needs gh to see which PRs are merged"
+  local wt here="" main
+  while IFS= read -r wt; do
+    # The worktree we're in goes last: removing it ends this session.
+    [[ $PWD/ == "$wt"/* ]] && { here=$wt; continue; }
+    main=$(main_checkout "$wt") || continue
+    [ "$(pr_state "$main" "$(git -C "$wt" branch --show-current)")" = MERGED ] &&
+      (remove "$wt" "") || true
+  done < <(all_worktrees)
+  if [ -n "$here" ]; then
+    main=$(main_checkout "$here")
+    [ "$(pr_state "$main" "$(git -C "$here" branch --show-current)")" = MERGED ] && remove "$here" ""
+  fi
+  return 0
+}
+
+cmd_ls() {
+  local wt main branch dirty
+  while IFS= read -r wt; do
+    main=$(main_checkout "$wt") || continue
+    branch=$(git -C "$wt" branch --show-current)
+    dirty=""; [ -z "$(git -C "$wt" status --porcelain)" ] || dirty=" *"
+    printf '%-40s %s%s\n' "$(label "$(basename "$main")" "$(basename "$wt")")" "$branch" "$dirty"
+  done < <(all_worktrees)
+}
+
+case ${1:-} in
+  new) shift; cmd_new "$@" ;;
+  rm) shift; cmd_rm "$@" ;;
+  gc) cmd_gc ;;
+  ls) cmd_ls ;;
+  _start) cmd_start ;;
+  *) sed -n '2,14p' "$SELF" | sed 's/^# \{0,1\}//'; [ -z "${1:-}" ] || exit 1 ;;
+esac
