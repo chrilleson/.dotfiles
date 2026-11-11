@@ -1261,8 +1261,9 @@ def cmd_list(args):
     for name, tool in tools.items():
         mine = unique([l for l in tool_links(tool, links) if applies(l)])
         pkgs = tool.get(OS, [])
-        if not mine and not pkgs and not (tool.get("install") or {}).get(OS):
-            continue  # nothing for this OS
+        # nothing for this OS (a local tool's config: is always this machine's)
+        if not mine and not pkgs and not (tool.get("install") or {}).get(OS) and not tool.get("config"):
+            continue
         if name in local_names and not heading:
             print(f"\n{DIM}local ({LOCAL_FILE}){NC}")
             heading = True
