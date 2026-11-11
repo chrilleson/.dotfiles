@@ -334,3 +334,9 @@ vicinae:
 
 mouseless:
   macos: [mouseless]
+
+# Rex (Superlogical, beta): installed from its download and updates itself, so no
+# package. Appearance settings live in macOS preferences; init.lua has the keys and
+# the Worktrees actions that run wt.
+rex:
+  links: [macos/rex]

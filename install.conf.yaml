@@ -188,3 +188,10 @@
     command: test -f ~/.gitconfig-local || cp shared/git/gitconfig-local.example ~/.gitconfig-local
     stdout: true
     stderr: true
+
+# rex
+- link:
+    ~/.config/rex/init.lua:
+      path: macos/rex/init.lua
+      if: '[ "$(uname)" = "Darwin" ]'
+      create: true
