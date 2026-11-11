@@ -223,6 +223,7 @@ cmd_gc() {
 
 cmd_ls() {
   local wt main branch dirty
+  [ -n "$(all_worktrees)" ] || { echo "No worktree tasks."; return; }
   while IFS= read -r wt; do
     main=$(main_checkout "$wt") || continue
     branch=$(git -C "$wt" branch --show-current)
