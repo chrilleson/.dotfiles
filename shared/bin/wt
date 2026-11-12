@@ -2,7 +2,10 @@
 # wt: one git worktree per task, each opened in its own Rex session (tmux without Rex),
 # with Claude Code beside a shell.
 #
-#   wt new [TITLE] [-r REPO]   create <workspace>/.worktrees/<repo>/<slug> on a new branch <slug>
+#   wt new [TITLE] [-r REPO] [-i ISSUE]
+#                              create <workspace>/.worktrees/<repo>/<slug> on a new branch <slug>;
+#                              with an issue (-i 42, or #42 as the title) the slug starts with its
+#                              number and Claude is told to read it and document the work on it
 #   wt rm [SLUG] [-f]          remove a worktree (the current one without SLUG), its session,
 #                              and its branch if the PR was merged; -f skips the safety checks
 #   wt gc                      wt rm every worktree whose PR is merged
@@ -12,6 +15,7 @@
 # .worktree-setup and .worktree-teardown scripts run in each new or removed worktree,
 # with WT_REPO, WT_MAIN (the main checkout), WT_WORKTREE, WT_BRANCH and WT_SLUG set.
 # WT_ROOTS lists the workspaces `wt new` picks repos from and `wt gc`/`wt ls` look in.
+# Issues and PRs come from GitHub (gh) or a Gitea that tea is logged in to.
 set -euo pipefail
 
 WT_ROOTS=${WT_ROOTS:-"$HOME/dev/repositories/*"}
@@ -20,8 +24,11 @@ SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]
 die() { echo "wt: $*" >&2; exit 1; }
 
 slugify() {
-  printf '%s' "$1" | tr '[:upper:]' '[:lower:]' |
-    sed -E 's/[^a-z0-9]+/-/g; s/^-+//' | cut -c1-40 | sed -E 's/-+$//'
+  local s
+  s=$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')
+  # at most 40 characters, cut between words
+  if [ ${#s} -gt 40 ]; then s=${s:0:41}; s=${s%-*}; s=${s:0:40}; fi
+  echo "$s"
 }
 
 # The main checkout of the repo DIR is in (also when DIR is one of its worktrees).
@@ -81,11 +88,76 @@ find_repo() {  # NAME or path
   die "no repo named $1 in $WT_ROOTS"
 }
 
+# The origin's host (SSH aliases resolved) and owner/name, as "HOST OWNER/NAME".
+remote_info() {  # MAIN
+  local url host path
+  url=$(git -C "$1" remote get-url origin 2>/dev/null) || return 1
+  case $url in
+    *://*) host=${url#*://}; host=${host#*@}; path=${host#*/}; host=${host%%/*}; host=${host%%:*} ;;
+    *:*) host=${url%%:*}; host=${host#*@}; path=${url#*:} ;;
+    *) return 1 ;;
+  esac
+  host=$(ssh -G "$host" </dev/null 2>/dev/null | awk '/^hostname / {print $2; exit}') || true
+  [ -n "$host" ] || return 1
+  echo "$host ${path%.git}"
+}
+
+# gh, tea, or nothing, for the repo's origin.
+forge() {  # HOST
+  if [ "$1" = github.com ]; then command -v gh >/dev/null && echo gh
+  elif command -v tea >/dev/null && tea login list --output simple 2>/dev/null | grep -qw "$1"; then echo tea
+  fi
+  return 0
+}
+
+# An issue's title and URL, one per line.
+issue_info() {  # MAIN NUMBER
+  local host repo
+  read -r host repo < <(remote_info "$1") || die "can't tell where $1's origin is hosted"
+  case $(forge "$host") in
+    gh) gh issue view "$2" -R "$repo" --json title,url -q '.title, .url' ;;
+    tea) tea issues --repo "$repo" --login "$host" --comments=false --output json "$2" | jq -r '.title, .url' ;;
+    *) die "no gh or tea login for $host, so issues can't be read" ;;
+  esac
+}
+
+# What Claude is told about the task's issue: where it is, and how to read and comment on it.
+issue_brief() {  # MAIN NUMBER
+  local host repo read post
+  read -r host repo < <(remote_info "$1") || return 0
+  case $(forge "$host") in
+    gh) read="gh issue view $2 -R $repo --json title,body,comments"; post="gh issue comment $2 -R $repo --body '...'" ;;
+    tea) read="tea issues --repo $repo --login $host --comments $2"; post="tea comment --repo $repo --login $host $2 '...'" ;;
+    *) return 0 ;;
+  esac
+  local url; url=$(git -C "$1" config "branch.$(git branch --show-current).wtIssueUrl" || true)
+  cat <<EOF
+This task is issue #$2${url:+ ($url)}. Start by reading it with its comments: \`$read\`.
+
+Keep the issue documented as you work, with short comments (\`$post\`):
+- your plan, before you start changing code;
+- each decision you make and anything you discover that others should know;
+- a summary when you're done.
+EOF
+}
+
+# MERGED when the branch's PR is merged (empty when there's no PR or no gh/tea).
+pr_state() {  # MAIN BRANCH
+  local host repo
+  read -r host repo < <(remote_info "$1") || return 0
+  case $(forge "$host") in
+    gh) gh pr view "$2" -R "$repo" --json state -q .state 2>/dev/null || true ;;
+    tea) tea pr ls --repo "$repo" --login "$host" --state all --fields head,state --output json --limit 100 2>/dev/null |
+           jq -r --arg b "$2" 'map(select(.head == $b))[0].state // empty | ascii_upcase' || true ;;
+  esac
+}
+
 cmd_new() {
-  local title="" repo_arg="" main
+  local title="" repo_arg="" issue="" main
   while [ $# -gt 0 ]; do
     case $1 in
       -r) repo_arg=${2:?-r needs a repo}; shift 2 ;;
+      -i) issue=${2:?-i needs an issue number}; issue=${issue#\#}; shift 2 ;;
       *) title="${title:+$title }$1"; shift ;;
     esac
   done
@@ -97,8 +169,18 @@ cmd_new() {
   local repo ws; repo=$(basename "$main"); ws=$(dirname "$main")
   echo "Repo: ${main/#$HOME/~}"
 
-  [ -n "$title" ] || read -rp "Task: " title
+  [ -n "$title$issue" ] || read -rp "Task (or #issue): " title
+  if [[ $title =~ ^#([0-9]+)$ ]]; then issue=${BASH_REMATCH[1]}; title=""; fi
+  local url=""
+  if [ -n "$issue" ]; then
+    [[ $issue =~ ^[0-9]+$ ]] || die "the issue should be a number, like 42 or #42"
+    local info; info=$(issue_info "$main" "$issue") || die "couldn't read issue #$issue"
+    url=$(sed -n 2p <<<"$info")
+    [ -n "$title" ] || title=$(sed -n 1p <<<"$info")
+    echo "Issue: #$issue $(sed -n 1p <<<"$info")"
+  fi
   local slug; slug=$(slugify "$title")
+  [ -n "$issue" ] && slug=$(slugify "$issue $title")
   [ -n "$slug" ] || die "the title needs a letter or digit"
 
   local wt="$ws/.worktrees/$repo/$slug"
@@ -113,6 +195,10 @@ cmd_new() {
   mkdir -p "$(dirname "$wt")"
   # --no-track: the branch shouldn't push to (or pull from) the base
   git -C "$main" worktree add -q --no-track -b "$slug" "$wt" "$base"
+  if [ -n "$issue" ]; then  # on the branch, so it goes when the branch does
+    git -C "$main" config "branch.$slug.wtIssue" "$issue"
+    git -C "$main" config "branch.$slug.wtIssueUrl" "$url"
+  fi
   echo "wt: $wt on $slug (from $base)"
 
   open_session "$(label "$repo" "$slug")" "$wt"
@@ -144,16 +230,17 @@ open_session() {  # LABEL WORKTREE
 # Runs in the task's session: setup, then Claude Code, then a shell. A failed setup
 # skips Claude and leaves the shell, to fix it by hand.
 cmd_start() {
-  local main; main=$(main_checkout .)
+  local main issue; main=$(main_checkout .)
+  issue=$(git config "branch.$(git branch --show-current).wtIssue" || true)
   if run_hook setup "$main" "$PWD"; then
-    claude || true
+    if [ -n "$issue" ]; then claude "$(issue_brief "$main" "$issue")" || true
+    else claude || true
+    fi
   else
     echo "wt: setup failed; fix it here, then run claude"
   fi
   exec "${SHELL:-/bin/zsh}" -l
 }
-
-pr_state() { (cd "$1" && gh pr view "$2" --json state -q .state 2>/dev/null) || true; }
 
 remove() {  # WORKTREE FORCE
   local wt=$1 force=$2 main branch repo merged=""
@@ -161,7 +248,7 @@ remove() {  # WORKTREE FORCE
   branch=$(git -C "$wt" branch --show-current)
   repo=$(basename "$main")
   [ "$wt" != "$main" ] || die "that's the main checkout, not a worktree"
-  command -v gh >/dev/null && [ "$(pr_state "$main" "$branch")" = MERGED ] && merged=1
+  [ "$(pr_state "$main" "$branch")" = MERGED ] && merged=1
 
   if [ -z "$force" ]; then
     [ -z "$(git -C "$wt" status --porcelain)" ] ||
@@ -205,7 +292,6 @@ cmd_rm() {
 }
 
 cmd_gc() {
-  command -v gh >/dev/null || die "gc needs gh to see which PRs are merged"
   local wt here="" main
   while IFS= read -r wt; do
     # The worktree we're in goes last: removing it ends this session.
@@ -222,13 +308,15 @@ cmd_gc() {
 }
 
 cmd_ls() {
-  local wt main branch dirty
+  local wt main branch dirty issue
   [ -n "$(all_worktrees)" ] || { echo "No worktree tasks."; return; }
   while IFS= read -r wt; do
     main=$(main_checkout "$wt") || continue
     branch=$(git -C "$wt" branch --show-current)
     dirty=""; [ -z "$(git -C "$wt" status --porcelain)" ] || dirty=" *"
-    printf '%-40s %s%s\n' "$(label "$(basename "$main")" "$(basename "$wt")")" "$branch" "$dirty"
+    issue=$(git -C "$main" config "branch.$branch.wtIssue" || true)
+    printf '%-40s %-40s %s%s\n' "$(label "$(basename "$main")" "$(basename "$wt")")" "$branch" \
+      "${issue:+#$issue}" "$dirty"
   done < <(all_worktrees)
 }
 
@@ -238,5 +326,5 @@ case ${1:-} in
   gc) cmd_gc ;;
   ls) cmd_ls ;;
   _start) cmd_start ;;
-  *) sed -n '2,14p' "$SELF" | sed 's/^# \{0,1\}//'; [ -z "${1:-}" ] || exit 1 ;;
+  *) sed -n '2,18p' "$SELF" | sed 's/^# \{0,1\}//'; [ -z "${1:-}" ] || exit 1 ;;
 esac
