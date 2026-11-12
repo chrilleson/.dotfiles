@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # wt: one git worktree per task, each opened in its own Rex session (tmux without Rex),
-# with Claude Code beside a shell.
+# with a tab for Claude Code and a tab for a shell.
 #
 #   wt new [TITLE] [-r REPO] [-i ISSUE]
 #                              create <workspace>/.worktrees/<repo>/<slug> on a new branch <slug>;
@@ -204,23 +204,21 @@ cmd_new() {
   open_session "$(label "$repo" "$slug")" "$wt"
 }
 
-# The task's session: Claude Code (after the setup) beside a shell.
+# The task's session: a tab with Claude Code (after the setup) and a tab with a shell.
 open_session() {  # LABEL WORKTREE
   if has_rex; then
-    local created id block
-    created=$(rex new "$1" --cwd "$2" --json -- "$SELF" _start)
+    local created id
+    created=$(rex new "$1" --window claude --cwd "$2" --json -- "$SELF" _start)
     id=$(jq -r .session_id <<<"$created")
-    block=$(jq -r '.initial_windows[0].block_ids[0]' <<<"$created")
-    [[ $id == session:* && $block == block:* ]] || die "couldn't read the new Rex session: $created"
-    rex split -s "$id" -b "$block" --cwd "$2" --focus=false >/dev/null
+    [[ $id == session:* ]] || die "couldn't read the new Rex session: $created"
+    rex window new -s "$id" shell --cwd "$2" --focus=false >/dev/null
     # Switching the app over needs Remote Control (Rex Settings > Rex Server).
     rex do session.select session_id="$id" >/dev/null 2>&1 ||
       echo "wt: opened Rex session $1 (it's in the sidebar)"
   elif command -v tmux >/dev/null; then
     local name=${1//[.:]/_}
-    tmux new-session -d -s "$name" -c "$2" "$SELF _start"
-    tmux split-window -h -t "$name" -c "$2"
-    tmux select-pane -t "$name.0"
+    tmux new-session -d -s "$name" -n claude -c "$2" "$SELF _start"
+    tmux new-window -d -t "$name" -n shell -c "$2"
     if [ -n "${TMUX:-}" ]; then tmux switch-client -t "$name"; else tmux attach -t "$name"; fi
   else
     echo "wt: no Rex or tmux; run: cd $2 && $SELF _start"
