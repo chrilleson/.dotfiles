@@ -9,7 +9,7 @@
 #   wt rm [SLUG] [-f]          remove a worktree (the current one without SLUG), its session,
 #                              and its branch if the PR was merged; -f skips the safety checks
 #   wt gc                      wt rm every worktree whose PR is merged, then pick others to remove;
-#                              also closes sessions left from tasks whose worktree is gone
+#                              or sessions left from tasks whose worktree is gone to close
 #   wt ls                      list the worktrees
 #
 # A workspace is a folder of repos, e.g. ~/dev/repositories/personal. Its optional
@@ -371,9 +371,10 @@ unsafe() {  # MAIN WORKTREE BRANCH
   echo "$why"
 }
 
-# Removes the tasks whose PR is merged, then asks which of the others to remove too.
+# Removes the tasks whose PR is merged, then asks which of the others to remove too, and
+# which sessions left from removed tasks to close.
 cmd_gc() {
-  local wt main branch state name why todo=() rest=()
+  local wt main branch state name why id todo=() rest=() close=""
   while IFS= read -r wt; do
     main=$(main_checkout "$wt") || continue
     branch=$(git -C "$wt" branch --show-current)
@@ -384,16 +385,21 @@ cmd_gc() {
     state=$(tr '[:upper:]' '[:lower:]' <<<"${state:-none}")
     rest+=("$wt"$'\t'"$name"$'\t'"PR: $state${why:+, $why}"$'\t'"$why")
   done < <(all_worktrees)
+  # Sessions whose task was removed some other way, picked by their ID.
+  while IFS=$'\t' read -r id name; do
+    [ -n "$id" ] && rest+=("$id"$'\t'"${name:-$id}"$'\t'"session, its worktree is gone"$'\t')
+  done < <(orphan_sessions)
 
   if [ ${#rest[@]} -gt 0 ]; then
     if [ -t 0 ] && [ -t 1 ] && command -v fzf >/dev/null; then
       local picked line
       picked=$(printf '%s\n' "${rest[@]}" | fzf --multi --delimiter=$'\t' --with-nth=2,3 \
-        --header "Not merged. Tab picks tasks to remove too, Enter removes them, Esc keeps all." \
+        --header "Tab picks what to remove or close too, Enter does it, Esc keeps everything." \
         --height 40% --reverse) || true
       while IFS= read -r line; do
         [ -n "$line" ] || continue
         IFS=$'\t' read -r wt name _ why <<<"$line"
+        if [[ $wt == session:* ]]; then close+="$wt"$'\n'; echo "wt: closing session $name"; continue; fi
         if [ -n "$why" ]; then
           read -rp "$name has $why. Remove it anyway and lose that? [y/N] " </dev/tty || true
           [[ $REPLY == [yY]* ]] || { echo "wt: kept $name"; continue; }
@@ -414,18 +420,9 @@ cmd_gc() {
     if [[ $PWD/ == "$wt"/* ]]; then here=$item; continue; fi
     (remove "$wt" "$force") || true
   done
-  # Sessions whose task was removed some other way: nothing in them to lose.
-  local orphans id
-  orphans=$(orphan_sessions)
-  while IFS=$'\t' read -r id name; do
-    [ -n "$id" ] || continue
-    echo "wt: closing session ${name:-$id} (its worktree is gone)"
-    todo+=(orphan)
-  done <<<"$orphans"
-  close_sessions "$(cut -f1 <<<"$orphans")"
-
+  close_sessions "$close"
   [ -z "$here" ] || remove "${here%%$'\t'*}" "${here#*$'\t'}"
-  [ ${#todo[@]} -gt 0 ] || echo "wt: nothing removed"
+  [ ${#todo[@]} -gt 0 ] || [ -n "$close" ] || echo "wt: nothing removed"
   return 0
 }
 
