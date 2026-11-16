@@ -33,6 +33,11 @@
       path: shared/bin/wt
       if: '[ "$(uname)" = "Darwin" ] || [ "$(uname)" = "Linux" ]'
       create: true
+    # and the Claude Code skill for making issues and starting tasks with it
+    ~/.claude/skills/wt:
+      path: shared/claude/skills/wt
+      if: '[ "$(uname)" = "Darwin" ] || [ "$(uname)" = "Linux" ]'
+      create: true
 
     # PowerShell 7 profile (Windows)
     ~/Documents/PowerShell/Microsoft.PowerShell_profile.ps1:
