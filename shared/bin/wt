@@ -251,8 +251,9 @@ cmd_start() {
   exec "${SHELL:-/bin/zsh}" -l
 }
 
-# Lua for `rex do`: every pane in every session, as "SESSION_ID<tab>LABEL<tab>FOLDER" lines,
-# the folder being where the pane's program runs.
+# Lua for `rex do`: every pane in every session, as "SESSION_ID<tab>LABEL<tab>FOLDER<tab>STATE"
+# lines: the folder where the pane's program runs, and the state it reports to Rex (Claude
+# Code does: idle, working, blocked, done or error), if any.
 LIST_PANES='
 local lines = {}
 for _, s in ipairs((rex.call("session.list") or {}).sessions or {}) do
@@ -262,7 +263,10 @@ for _, s in ipairs((rex.call("session.list") or {}).sessions or {}) do
       local p = rex.block.call("com.superlogical.terminal", "process",
         { block_id = b.block_id, session_id = s.session_id })
       local cwd = p and p.foreground and p.foreground.cwd
-      if cwd then lines[#lines + 1] = s.session_id .. "\t" .. (s.label or "") .. "\t" .. cwd end
+      local st = rex.block.call("com.superlogical.terminal", "program_status",
+        { block_id = b.block_id, session_id = s.session_id })
+      local state = st and st.records and st.records[1] and st.records[1].state or ""
+      if cwd then lines[#lines + 1] = s.session_id .. "\t" .. (s.label or "") .. "\t" .. cwd .. "\t" .. state end
     end
     rex.session.detach{ session_id = s.session_id }
   end
@@ -291,7 +295,7 @@ in_roots() {  # WORKSPACE
 orphan_sessions() {
   local id name cwd dir
   declare -a seen=() live=()
-  while IFS=$'\t' read -r id name cwd; do
+  while IFS=$'\t' read -r id name cwd _; do
     [[ $cwd == */.worktrees/*/* ]] || continue
     dir=$(sed -E 's|(.*/\.worktrees/[^/]+/[^/]+).*|\1|' <<<"$cwd")
     in_roots "${dir%/.worktrees/*}" || continue
@@ -426,16 +430,34 @@ cmd_gc() {
   return 0
 }
 
+# Claude's state in each worktree, as "WORKTREE<tab>STATE" lines: the most pressing state
+# reported by a program in its panes, in words.
+task_states() {
+  panes | awk -F'\t' '
+    $4 != "" && match($3, /\/\.worktrees\/[^\/]+\/[^\/]+/) {
+      wt = substr($3, 1, RSTART + RLENGTH - 1)
+      rank = index("idle done working error blocked", $4)
+      if (rank > best[wt]) { best[wt] = rank; state[wt] = $4 }
+    }
+    END {
+      words["blocked"] = "waiting on you"; words["error"] = "error"; words["working"] = "working"
+      words["done"] = "done"; words["idle"] = "idle"
+      for (wt in state) print wt "\t" words[state[wt]]
+    }'
+}
+
 cmd_ls() {
-  local wt main branch dirty issue
+  local wt main branch dirty issue states state
   [ -n "$(all_worktrees)" ] || { echo "No worktree tasks."; return; }
+  states=$(task_states)
   while IFS= read -r wt; do
     main=$(main_checkout "$wt") || continue
     branch=$(git -C "$wt" branch --show-current)
     dirty=""; [ -z "$(git -C "$wt" status --porcelain)" ] || dirty=" *"
     issue=$(git -C "$main" config "branch.$branch.wtIssue" || true)
-    printf '%-40s %-40s %s%s\n' "$(label "$(basename "$main")" "$(basename "$wt")")" "$branch" \
-      "${issue:+#$issue}" "$dirty"
+    state=$(awk -F'\t' -v w="$wt" '$1 == w { print $2 }' <<<"$states")
+    printf '%-40s %-40s %-6s %s%s\n' "$(label "$(basename "$main")" "$(basename "$wt")")" "$branch" \
+      "${issue:+#$issue}" "${state:--}" "$dirty"
   done < <(all_worktrees)
 }
 
