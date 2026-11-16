@@ -8,7 +8,8 @@
 #                              number and Claude is told to read it and document the work on it
 #   wt rm [SLUG] [-f]          remove a worktree (the current one without SLUG), its session,
 #                              and its branch if the PR was merged; -f skips the safety checks
-#   wt gc                      wt rm every worktree whose PR is merged, then pick others to remove
+#   wt gc                      wt rm every worktree whose PR is merged, then pick others to remove;
+#                              also closes sessions left from tasks whose worktree is gone
 #   wt ls                      list the worktrees
 #
 # A workspace is a folder of repos, e.g. ~/dev/repositories/personal. Its optional
@@ -250,9 +251,10 @@ cmd_start() {
   exec "${SHELL:-/bin/zsh}" -l
 }
 
-# Lua for `rex do`: the sessions with a pane whose program runs inside rex.args.dir.
-FIND_SESSIONS='
-local dir, found = rex.args.dir, {}
+# Lua for `rex do`: every pane in every session, as "SESSION_ID<tab>LABEL<tab>FOLDER" lines,
+# the folder being where the pane's program runs.
+LIST_PANES='
+local lines = {}
 for _, s in ipairs((rex.call("session.list") or {}).sessions or {}) do
   if rex.session.attach{ session_id = s.session_id } then
     local blocks = rex.session.list_blocks{ session_id = s.session_id }
@@ -260,23 +262,47 @@ for _, s in ipairs((rex.call("session.list") or {}).sessions or {}) do
       local p = rex.block.call("com.superlogical.terminal", "process",
         { block_id = b.block_id, session_id = s.session_id })
       local cwd = p and p.foreground and p.foreground.cwd
-      if cwd and (cwd == dir or cwd:sub(1, #dir + 1) == dir .. "/") then
-        found[#found + 1] = s.session_id
-        break
-      end
+      if cwd then lines[#lines + 1] = s.session_id .. "\t" .. (s.label or "") .. "\t" .. cwd end
     end
     rex.session.detach{ session_id = s.session_id }
   end
 end
-return table.concat(found, "\n")'
+return table.concat(lines, "\n")'
+
+panes() { has_rex || return 0; rex do - <<<"$LIST_PANES" 2>/dev/null | jq -r . 2>/dev/null || true; }
 
 # A task's Rex sessions: the one wt opened, and any with a pane in the worktree (older
 # tasks, or tabs opened there by hand). Labels don't help: Claude renames sessions.
 task_sessions() {  # MAIN BRANCH WORKTREE
   has_rex || return 0
   { git -C "$1" config "branch.$2.wtRexSession" || true
-    rex do - dir="$3" <<<"$FIND_SESSIONS" 2>/dev/null | jq -r . 2>/dev/null || true
+    panes | awk -F'\t' -v d="$3" '$3 == d || index($3, d "/") == 1 { print $1 }'
   } | grep '^session:' | sort -u || true
+}
+
+in_roots() {  # WORKSPACE
+  local root
+  for root in $WT_ROOTS; do [ "$root" = "$1" ] && return 0; done
+  return 1
+}
+
+# Sessions left from tasks whose worktree is gone: each of their panes in a
+# .worktrees/<repo>/<task> folder points at one that no longer exists. As "ID<tab>LABEL".
+orphan_sessions() {
+  local id name cwd dir
+  declare -a seen=() live=()
+  while IFS=$'\t' read -r id name cwd; do
+    [[ $cwd == */.worktrees/*/* ]] || continue
+    dir=$(sed -E 's|(.*/\.worktrees/[^/]+/[^/]+).*|\1|' <<<"$cwd")
+    in_roots "${dir%/.worktrees/*}" || continue
+    seen+=("$id"$'\t'"$name")
+    [ -d "$dir" ] && live+=("$id")
+  done < <(panes)
+  local item
+  for item in "${seen[@]+"${seen[@]}"}"; do
+    case " ${live[*]+"${live[*]}"} " in *" ${item%%$'\t'*} "*) continue ;; esac
+    echo "$item"
+  done | sort -u
 }
 
 # Closes the sessions, the one wt runs in last (closing it ends wt).
@@ -347,7 +373,6 @@ unsafe() {  # MAIN WORKTREE BRANCH
 
 # Removes the tasks whose PR is merged, then asks which of the others to remove too.
 cmd_gc() {
-  [ -n "$(all_worktrees)" ] || { echo "No worktree tasks."; return; }
   local wt main branch state name why todo=() rest=()
   while IFS= read -r wt; do
     main=$(main_checkout "$wt") || continue
@@ -389,6 +414,16 @@ cmd_gc() {
     if [[ $PWD/ == "$wt"/* ]]; then here=$item; continue; fi
     (remove "$wt" "$force") || true
   done
+  # Sessions whose task was removed some other way: nothing in them to lose.
+  local orphans id
+  orphans=$(orphan_sessions)
+  while IFS=$'\t' read -r id name; do
+    [ -n "$id" ] || continue
+    echo "wt: closing session ${name:-$id} (its worktree is gone)"
+    todo+=(orphan)
+  done <<<"$orphans"
+  close_sessions "$(cut -f1 <<<"$orphans")"
+
   [ -z "$here" ] || remove "${here%%$'\t'*}" "${here#*$'\t'}"
   [ ${#todo[@]} -gt 0 ] || echo "wt: nothing removed"
   return 0
