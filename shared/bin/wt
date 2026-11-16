@@ -147,8 +147,16 @@ pr_state() {  # MAIN BRANCH
   read -r host repo < <(remote_info "$1") || return 0
   case $(forge "$host") in
     gh) gh pr view "$2" -R "$repo" --json state -q .state 2>/dev/null || true ;;
-    tea) tea pr ls --repo "$repo" --login "$host" --state all --fields head,state --output json --limit 100 2>/dev/null |
-           jq -r --arg b "$2" 'map(select(.head == $b))[0].state // empty | ascii_upcase' || true ;;
+    tea)  # the PR into origin's default branch, looked up directly (any age), else one of
+          # the 50 newest PRs, for a PR into another branch (stacked PRs)
+      local base state
+      base=$(git -C "$1" symbolic-ref -q --short refs/remotes/origin/HEAD || echo origin/main)
+      state=$(tea api --login "$host" "repos/$repo/pulls/${base#origin/}/$2" 2>/dev/null |
+        jq -r 'if .merged == true then "MERGED" elif .state then (.state | ascii_upcase) else empty end' 2>/dev/null) || true
+      [ -n "$state" ] || state=$(tea pr ls --repo "$repo" --login "$host" --state all --fields head,state \
+        --output json --limit 50 2>/dev/null |
+        jq -r --arg b "$2" 'map(select(.head == $b))[0].state // empty | ascii_upcase' 2>/dev/null) || true
+      echo "$state" ;;
   esac
 }
 
@@ -289,19 +297,26 @@ cmd_rm() {
   remove "$wt" "$force"
 }
 
+# Removes the worktree if its PR is merged, else says why it stays.
+gc_one() {  # WORKTREE
+  local main branch state
+  main=$(main_checkout "$1") || return 0
+  branch=$(git -C "$1" branch --show-current)
+  state=$(pr_state "$main" "$branch")
+  if [ "$state" = MERGED ]; then (remove "$1" "") || true
+  else echo "wt: kept $(label "$(basename "$main")" "$(basename "$1")") (PR: $(tr '[:upper:]' '[:lower:]' <<<"${state:-none}"))"
+  fi
+}
+
 cmd_gc() {
-  local wt here="" main
+  local wt here=""
+  [ -n "$(all_worktrees)" ] || { echo "No worktree tasks."; return; }
   while IFS= read -r wt; do
     # The worktree we're in goes last: removing it ends this session.
     [[ $PWD/ == "$wt"/* ]] && { here=$wt; continue; }
-    main=$(main_checkout "$wt") || continue
-    [ "$(pr_state "$main" "$(git -C "$wt" branch --show-current)")" = MERGED ] &&
-      (remove "$wt" "") || true
+    gc_one "$wt"
   done < <(all_worktrees)
-  if [ -n "$here" ]; then
-    main=$(main_checkout "$here")
-    [ "$(pr_state "$main" "$(git -C "$here" branch --show-current)")" = MERGED ] && remove "$here" ""
-  fi
+  [ -z "$here" ] || gc_one "$here"
   return 0
 }
 
